@@ -76,7 +76,7 @@ impl BattleBuffJson {
             id: self.id,
             level: self.level,
             wave_flag: 0xffffffff,
-            owner_index: 0xffffffff,
+            owner_id: 0xffffffff,
             dynamic_values: if let Some(dyn_key) = &self.dynamic_key {
                 HashMap::from([(dyn_key.key.clone(), dyn_key.value as f32)])
             } else {

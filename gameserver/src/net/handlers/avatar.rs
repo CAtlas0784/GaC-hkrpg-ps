@@ -38,7 +38,7 @@ pub async fn on_get_avatar_data_cs_req(
                     base_avatar_id: id,
                     level: 80,
                     promotion: 6,
-                    first_met_time_stamp: 1712924677,
+                    first_met_timestamp: 1712924677,
                     cur_multi_path_avatar_type: 0,
                     equipment_unique_id: 0,
                     has_taken_promotion_reward_list: vec![1, 3, 5],

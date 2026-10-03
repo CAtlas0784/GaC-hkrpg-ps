@@ -124,6 +124,7 @@ async fn refresh_lineup(session: &mut PlayerSession) {
                 inst_id: 0,
                 ..Default::default()
             })),
+            ..Default::default()
         })
         .collect();
 
@@ -131,10 +132,10 @@ async fn refresh_lineup(session: &mut PlayerSession) {
 
     session
         .send(SceneGroupRefreshScNotify {
-            group_refresh_list: vec![GroupRefreshInfo {
+            group_refresh_info: vec![GroupRefreshInfo {
                 group_id: 0,
                 state: 0,
-                refresh_type: SceneGroupRefreshType::Loaded.into(),
+                group_refresh_type: SceneGroupRefreshType::Loaded.into(),
                 refresh_entity: new_entities,
                 ..Default::default()
             }],

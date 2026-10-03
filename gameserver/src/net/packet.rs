@@ -135,7 +135,7 @@ macro_rules! trait_handler {
                             }
                         }
                     )*
-                    1711 => {
+                    1775 | 1711 => {
                         let mut buf = &payload[..];
                         let mut group_id = 100u32;
                         while !buf.is_empty() {
@@ -226,22 +226,29 @@ macro_rules! trait_handler {
                             body.extend_from_slice(&cbs);
                         }
 
+                        // 4.6.51: 1708, legacy: 1736
                         session.send_raw(NetPacket {
-                            cmd_type: 1736,
-                            head: Vec::new(),
-                            body,
-                        }).await?;
-                        Ok(())
-                    }
-                    8979 | 8981 => {
-                        let body = challenge::build_get_challenge_tierce_data_sc_rsp();
-                        session.send_raw(NetPacket {
-                            cmd_type: 8994, // 4.5.52 GetChallengeTierceDataScRsp
+                            cmd_type: 1708,
                             head: Vec::new(),
                             body: body.clone(),
                         }).await?;
                         let _ = session.send_raw(NetPacket {
-                            cmd_type: 8980, // legacy fallback
+                            cmd_type: 1736,
+                            head: Vec::new(),
+                            body,
+                        }).await;
+                        Ok(())
+                    }
+                    8995 | 8979 | 8981 => {
+                        let body = challenge::build_get_challenge_tierce_data_sc_rsp();
+                        // 4.6.51: 8996, legacy: 8994
+                        session.send_raw(NetPacket {
+                            cmd_type: 8996,
+                            head: Vec::new(),
+                            body: body.clone(),
+                        }).await?;
+                        let _ = session.send_raw(NetPacket {
+                            cmd_type: 8994,
                             head: Vec::new(),
                             body,
                         }).await;
@@ -327,28 +334,33 @@ macro_rules! trait_handler {
                         session.send_raw(NetPacket { cmd_type: 1748, head: Vec::new(), body: Vec::new() }).await?;
                         Ok(())
                     }
-                    1705 | 1793 => {
+                    1731 | 1793 => {
                         challenge::handle_start_challenge(session, &payload).await
                     }
-                    8983 | 8988 => {
+                    8986 | 8983 | 8988 => {
                         challenge::handle_start_challenge_tierce(session, &payload).await
                     }
                     8978 => {
                         challenge::handle_set_challenge_tierce_lineup(session, &payload).await
                     }
-                    1760 | 1788 => {
+                    1705 | 1760 | 1788 => {
                         challenge::handle_leave_challenge(session).await
                     }
-                    8998 => {
+                    8989 | 8998 => {
                         challenge::handle_leave_challenge_tierce(session).await
                     }
-                    8991 => {
-                        // 4.5.52 GetChallengeTierceControllerCsReq -> GetChallengeTierceControllerScRsp (CmdID 8982: tag 14 retcode = 0)
+                    8993 | 8991 => {
+                        // 4.6.51: 8981, 4.5.52: 8982 (tag 14 retcode = 0)
                         session.send_raw(NetPacket {
-                            cmd_type: 8982,
+                            cmd_type: 8981,
                             head: Vec::new(),
                             body: vec![0x70, 0x00],
                         }).await?;
+                        let _ = session.send_raw(NetPacket {
+                            cmd_type: 8982,
+                            head: Vec::new(),
+                            body: vec![0x70, 0x00],
+                        }).await;
                         Ok(())
                     }
                     8987 => {

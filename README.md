@@ -10,17 +10,15 @@ This repository is forked and actively contributed/developed upon:
 - **Original / Upstream Repository**: [horoyoi-san/Hoyo (branch: `hkrpg-RobinSR`)](https://github.com/horoyoi-san/Hoyo/tree/hkrpg-RobinSR)
 - Built upon the foundation of **RobinSR & JadeSR** by [reversedrooms](https://git.xeondev.com/reversedrooms):
   - [RobinSR Repository](https://git.xeondev.com/reversedrooms/RobinSR)
-  - [JadeSR Repository](https://git.xeondev.com/reversedrooms/JadeSR)
-- Special thanks to **keiracoder** for earlier updates! 🔥
 
-### 🚀 Major Enhancements & New Features (by CAtlas0784)
+### 🚀 Major Enhancements & New Features
 - **Full Endgame Challenge Protocol Overhaul**:
   - **Forgotten Hall**: Complete story stages (Jarilo-VI 15 floors & Luofu 6 floors) with full 3-star bitmasks.
   - **Memory of Chaos (MoC)**: All floors (1–12) unlocked with 36/36 ⭐, 20-cycle records, and active season stages (GroupID 1035).
   - **Pure Fiction (PF)**: All floors (1–4) unlocked with 12/12 ⭐, 80,000 score records (clearing the "No Data" lock state).
   - **Apocalyptic Shadow (AS)**: Floors (1–4) unlocked with full trial statistics and 4,000/8,000 score ratings.
   - **Starward Mode / 3-Node Challenge Tierce**: Fully supported Tierce mode data (`8981`/`8980`), 3-node lineup management (`8979`/`8995`), and active boss data.
-- **Direct Challenge Battle Entry ("กด Challenge เข้าไปตีได้")**:
+- **Direct Challenge Battle Entry**: (i need new res.json for fix this bug)
   - Clicking **Start Challenge** on the lineup UI smoothly loads the arena scene (`load_challenge_scene`) with monsters, props, and custom player placement.
   - Automatically transfers your chosen lineup from the UI into the turn-based combat system (`battle_config.custom_battle_lineup`).
   - Precomputed `challenge_data.json` containing 783 standard stages + 7 Tierce stages and 1,509 wave configs with exact monster IDs and levels.

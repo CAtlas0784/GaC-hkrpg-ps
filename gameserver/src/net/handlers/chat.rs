@@ -432,7 +432,7 @@ fn create_send_message(
     RevcMsgScNotify {
         chat_type,
         pffpfkoglpo: to,
-        recv_message_data: Some(ChatMessageData {
+        msg: Some(ChatMessageData {
             create_time: cur_timestamp_ms(),
             ckhpffenobe: Some(Eknabklpeel {
                 kpobmnlklok: 1,

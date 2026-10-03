@@ -51,7 +51,7 @@ pub async fn query_gateway(
         ip: String::from("127.0.0.1"),
         port: 23301,
         asset_bundle_url: config.asset_bundle_url.clone(),
-        asset_bundle_url_android: config.asset_bundle_url.clone(),
+        asset_bundle_url_b: config.asset_bundle_url.clone(),
         ex_resource_url: config.ex_resource_url.clone(),
         lua_url: config.lua_url.clone(),
         ifix_version: String::from("0"),

@@ -18,7 +18,7 @@ pub struct Lightcone {
 
 impl_from!(Lightcone, Equipment, |value| {
     Equipment {
-        dress_avatar_id: value.equip_avatar,
+        equip_avatar_id: value.equip_avatar,
         exp: 0,
         is_protected: false,
         level: value.level,

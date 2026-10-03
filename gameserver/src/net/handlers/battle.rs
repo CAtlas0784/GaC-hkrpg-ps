@@ -100,7 +100,7 @@ pub async fn on_scene_cast_skill_cs_req(
         return;
     }
 
-    let battle_info = create_battle_info(session, req.attacked_by_entity_id, req.skill_index).await;
+    let battle_info = create_battle_info(session, req.caster_id, req.skill_index).await;
 
     CURRENT_BATTLE
         .lock()
@@ -224,7 +224,7 @@ pub async fn create_battle_info(
                 battle_info.buff_list.push(BattleBuff {
                     id: avatar_config.weakness_buff_id,
                     level: 1,
-                    owner_index: *avatar_index,
+                    owner_id: *avatar_index,
                     wave_flag: 0xffffffff,
                     dynamic_values: HashMap::from([(
                         String::from("SkillIndex"),
@@ -242,7 +242,7 @@ pub async fn create_battle_info(
                     id: 122401,
                     level: 3,
                     wave_flag: 0xffffffff,
-                    owner_index: *avatar_index,
+                    owner_id: *avatar_index,
                     dynamic_values: HashMap::from([
                         (String::from("#ADF_1"), 3f32),
                         (String::from("#ADF_2"), 3f32),
@@ -253,13 +253,12 @@ pub async fn create_battle_info(
         };
     }
 
-    // Hardcoded Cerydra & Danheng PT technique
-    // and hardcode dahlia dance partner to 1st in lineup
-    let first_avatar_attack_id = if let Some(c) = GAME_RES.avatar_configs.get(&first_avatar_id) {
-        c.weakness_buff_id
-    } else {
-        0
-    };
+    // Resolve character-specific technique buffs dynamically
+    let first_avatar_attack_id = GAME_RES
+        .avatar_configs
+        .get(&first_avatar_id)
+        .map(|c| c.weakness_buff_id)
+        .unwrap_or(0);
 
     let len = battle_info.buff_list.len();
     let mut has_replaced = false;
@@ -268,11 +267,10 @@ pub async fn create_battle_info(
         let is_last = i == len - 1;
 
         if buff.id == 141202 || buff.id == 141403 {
-            buff.owner_index = first_avatar_idx;
+            buff.owner_id = first_avatar_idx;
             continue;
         }
 
-        // this is actually useless because there is 0 attack buff id in calyx but idc
         if has_dahlia
             && is_calyx
             && let 1000111..=1000117 = buff.id
@@ -280,7 +278,7 @@ pub async fn create_battle_info(
             && first_avatar_attack_id != 0
         {
             buff.id = first_avatar_attack_id;
-            buff.owner_index = first_avatar_idx;
+            buff.owner_id = first_avatar_idx;
             has_replaced = true;
         }
 
@@ -345,7 +343,7 @@ pub async fn create_battle_info(
             id: blessing.id,
             level: blessing.level,
             wave_flag: 0xffffffff,
-            owner_index: 0xffffffff,
+            owner_id: 0xffffffff,
             ..Default::default()
         };
 
@@ -523,7 +521,7 @@ pub async fn create_battle_info(
         battle_info.buff_list.push(BattleBuff {
             id: 140703,
             level: 1,
-            owner_index: u32::MAX,
+            owner_id: u32::MAX,
             wave_flag: u32::MAX,
             target_index_list: Vec::with_capacity(0),
             dynamic_values: HashMap::with_capacity(0),
@@ -534,7 +532,7 @@ pub async fn create_battle_info(
         battle_info.buff_list.push(BattleBuff {
             id: 150602,
             level: 1,
-            owner_index: u32::MAX,
+            owner_id: u32::MAX,
             wave_flag: u32::MAX,
             target_index_list: Vec::with_capacity(0),
             dynamic_values: HashMap::with_capacity(0),

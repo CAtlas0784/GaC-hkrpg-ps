@@ -67,14 +67,14 @@ impl_from!(Relic, BattleRelic, |value| {
 
 impl_from!(Relic, EquipRelic, |value| {
     EquipRelic {
-        r#type: value.get_slot(),
+        relic_slot: value.get_slot(),
         relic_unique_id: value.get_unique_id(),
     }
 });
 
 impl_from!(Relic, proto::Relic, |value| {
     proto::Relic {
-        dress_avatar_id: value.equip_avatar,
+        equip_avatar_id: value.equip_avatar,
         exp: 0,
         is_protected: false,
         level: value.level,

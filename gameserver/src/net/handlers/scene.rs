@@ -48,8 +48,8 @@ pub async fn on_enter_scene_cs_req(
     res: &mut EnterSceneScRsp,
 ) {
     tracing::info!(
-        "on_enter_scene_cs_req: entry_id={}, entry_id2={}, interact_id={}, scene_identifier={:?}",
-        req.entry_id, req.entry_id2, req.interact_id, req.scene_identifier
+        "on_enter_scene_cs_req: entry_id={}, teleport_id={}, interact_id={}, scene_identifier={:?}",
+        req.entry_id, req.teleport_id, req.interact_id, req.scene_identifier
     );
 
     let resolved_entry_id = if req.entry_id != 0 && GAME_RES.level_output_configs.contains_key(&req.entry_id) {
@@ -58,12 +58,12 @@ pub async fn on_enter_scene_cs_req(
         e
     } else if let Some(&e) = GAME_RES.map_default_entrance_map.get(&req.entry_id) {
         e
-    } else if req.entry_id2 != 0 {
+    } else if req.teleport_id != 0 {
         let mut found_entry = None;
         for (&eid, map) in &GAME_RES.level_output_configs {
             for sc in map.values() {
                 for grp in sc.scenes.values() {
-                    if grp.teleports.contains_key(&req.entry_id2) {
+                    if grp.teleports.contains_key(&req.teleport_id) {
                         found_entry = Some(eid);
                         break;
                     }
@@ -97,8 +97,8 @@ pub async fn on_enter_scene_cs_req(
         session.json_data.get().map(|p| p.scene.entry_id).unwrap_or(100000104)
     };
 
-    let teleport_id = if req.entry_id2 != 0 {
-        Some(req.entry_id2)
+    let teleport_id = if req.teleport_id != 0 {
+        Some(req.teleport_id)
     } else if let Some(scene_identifier::TeleportNigger::Mdaidppkopo(t)) =
         req.scene_identifier.as_ref().and_then(|si| si.teleport_nigger.as_ref())
     {
@@ -203,7 +203,7 @@ pub async fn on_get_scene_map_info_cs_req(
                 });
 
                 for teleport in group.teleports.keys() {
-                    map_info.unlock_teleport_list.push(*teleport)
+                    map_info.unlocked_teleport_list.push(*teleport)
                 }
 
                 for prop in &group.props {
@@ -223,7 +223,7 @@ pub async fn on_get_scene_map_info_cs_req(
             }
 
             map_info.lighten_section_list = floor_config.sections.clone();
-            map_info.floor_saved_value_map = floor_config.saved_values.clone();
+            map_info.floor_saved_data = floor_config.saved_values.clone();
             // #TODO!
             // map_info
             //     .chest_unlock_progress_list
@@ -234,7 +234,7 @@ pub async fn on_get_scene_map_info_cs_req(
             //     });
         }
 
-        res.scene_map_info_list.push(map_info)
+        res.scene_map_info.push(map_info)
     }
 }
 

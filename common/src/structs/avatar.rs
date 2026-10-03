@@ -119,6 +119,24 @@ impl MultiPathAvatar {
             Self::MarchPreservation,
         ]
     }
+
+    pub fn is_main_character(avatar_id: u32) -> bool {
+        (8001..=8010).contains(&avatar_id)
+    }
+
+    pub fn is_march_7th(avatar_id: u32) -> bool {
+        avatar_id == 1001 || avatar_id == 1224
+    }
+
+    pub fn base_avatar_id(avatar_id: u32) -> u32 {
+        if Self::is_main_character(avatar_id) {
+            8001
+        } else if Self::is_march_7th(avatar_id) {
+            1001
+        } else {
+            avatar_id
+        }
+    }
 }
 
 // AVATAR
@@ -157,19 +175,10 @@ impl AvatarJson {
         mc_id: u32,
         march_id: u32,
     ) -> Avatar {
-        // TODO: HARDCODED
-        let base_avatar_id = if self.avatar_id > 8000 {
-            8001
-        } else if self.avatar_id == 1001 || self.avatar_id == 1224 {
-            1001
-        } else {
-            self.avatar_id
-        };
-
-        // TODO: HARDCODED
-        let cur_multi_path_avatar_type = if base_avatar_id == 8001 {
+        let base_avatar_id = MultiPathAvatar::base_avatar_id(self.avatar_id);
+        let cur_multi_path_avatar_type = if MultiPathAvatar::is_main_character(self.avatar_id) {
             mc_id
-        } else if base_avatar_id == 1001 {
+        } else if MultiPathAvatar::is_march_7th(self.avatar_id) {
             march_id
         } else {
             base_avatar_id
@@ -180,7 +189,7 @@ impl AvatarJson {
             level: self.level,
             promotion: self.promotion,
             equipment_unique_id: lightcone.map(|v| v.get_unique_id()).unwrap_or_default(),
-            first_met_time_stamp: 1712924677,
+            first_met_timestamp: 1712924677,
             cur_multi_path_avatar_type,
             has_taken_promotion_reward_list: vec![1, 3, 5],
             is_marked: false,
@@ -205,12 +214,13 @@ impl AvatarJson {
                 .data
                 .skills_by_anchor_type
                 .iter()
-                .map(|(&anchor_type, &level)| AvatarPathSkillTree { anchor_type, level })
+                .map(|(&anchor_type, &level)| AvatarPathSkillTree { point_id: anchor_type, level })
                 .collect(),
             path_equipment_id: lightcone.map(|v| v.get_unique_id()).unwrap_or_default(),
-            unk_enhanced_id: self.enhanced_id.unwrap_or_default(),
+            enhanced_id: self.enhanced_id.unwrap_or_default(),
             unlock_timestamp: 0,
             dressed_skin_id: 0,
+            ..Default::default()
         }
     }
 
@@ -256,7 +266,7 @@ impl AvatarJson {
         for buff_id in &self.techniques {
             battle_buff.push(BattleBuff {
                 wave_flag: 0xffffffff,
-                owner_index: index,
+                owner_id: index,
                 level: 1,
                 id: *buff_id,
                 dynamic_values: HashMap::from([(String::from("SkillIndex"), 2.0)]),
