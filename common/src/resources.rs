@@ -145,8 +145,20 @@ pub struct JsonConfig {
     pub avatar_configs: HashMap<u32, AvatarConfig>,
     pub map_default_entrance_map: HashMap<u32, u32>,
     pub relic_avatar_recommend: HashMap<u32, Vec<u32>>,
+    /// รายชื่อ skin id ที่ปลดล็อกทั้งหมด (แสดงในหน้าเลือกชุดของ client)
+    #[serde(default)]
+    pub skin_ids: Vec<u32>,
 }
 
 pub static GAME_RES: LazyLock<JsonConfig> = LazyLock::new(|| {
     serde_json::from_str::<JsonConfig>(&fs::read_to_string("res.json").unwrap()).unwrap()
+});
+
+/// teleport ทุกแมพจาก teleports.json — {floor_id: {teleport_id: info}}
+/// ใช้ fallback เมื่อฉากใน res.json ไม่มี teleport (เช่นฉาก arena)
+pub static TELEPORT_DB: LazyLock<HashMap<u32, HashMap<u32, TeleportInfo>>> = LazyLock::new(|| {
+    std::fs::read_to_string("teleports.json")
+        .ok()
+        .and_then(|v| serde_json::from_str(&v).ok())
+        .unwrap_or_default()
 });

@@ -16,8 +16,8 @@ pub async fn query_dispatch() -> String {
     let rsp = Dispatch {
         retcode: 0,
         region_list: vec![RegionInfo {
-            name: String::from("RobinSR"),
-            title: String::from("RobinSR"),
+            name: String::from("GaC hkrpg ps"),
+            title: String::from("GaC hkrpg ps"),
             env_type: String::from("9"),
             dispatch_url: String::from("http://127.0.0.1:21000/query_gateway"),
             ..Default::default()

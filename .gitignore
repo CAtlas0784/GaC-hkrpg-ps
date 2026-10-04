@@ -1,7 +1,24 @@
 target/
 *.log
 build.log
+server_debug.log
 /prebuild
 /assets
 .vscode
 .prebuilt
+# Temporary debug and test files
+*.py
+*.bak
+*.bin
+*.tmp
+*.temp
+*.dump
+*.pfx
+*.cer
+rootCert.*
+test/
+scratch/
+test_*.json
+test_*.txt
+gameserver/src/net/full_dummy.rs
+tools/AI TOOLBOX/memory/2026-10-04.md

@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::sync::{LazyLock, Mutex};
 use serde::Deserialize;
 use prost::Message;
+use common::resources::GAME_RES;
 use common::structs::{AvatarJson, BattleType, BattleBuffJson, Monster};
 
 #[derive(Deserialize, Clone, Debug, Default)]
@@ -37,6 +38,25 @@ pub struct StageBattleData {
     pub monsters: Vec<Vec<u32>>,
 }
 
+/// หนึ่งสเตจของ Starward Mode (peak)
+#[derive(Deserialize, Clone, Debug, Default)]
+pub struct PeakStageData {
+    #[serde(default)]
+    pub event_id: u32,
+    #[serde(default)]
+    pub hard_event_id: u32,
+    #[serde(default)]
+    pub monster_id: u32,
+    #[serde(default)]
+    pub default_buff: u32,
+    #[serde(default)]
+    pub is_boss: bool,
+    #[serde(default)]
+    pub targets: Vec<u32>,
+    #[serde(default)]
+    pub hard_target: u32,
+}
+
 #[derive(Deserialize, Clone, Debug, Default)]
 pub struct ChallengeConfigData {
     #[serde(default)]
@@ -46,6 +66,9 @@ pub struct ChallengeConfigData {
     pub challenges: HashMap<u32, ChallengeStageData>,
     pub tierce: HashMap<u32, ChallengeTierceStageData>,
     pub stages: HashMap<u32, StageBattleData>,
+    /// Starward Mode stages — key = stage id (101, 102, 201, ...)
+    #[serde(default)]
+    pub peak: HashMap<String, PeakStageData>,
 }
 
 pub static CHALLENGE_DATA: LazyLock<ChallengeConfigData> = LazyLock::new(|| {
@@ -100,6 +123,28 @@ fn get_challenge_groups() -> Vec<u32> {
     groups
 }
 
+/// group_id ที่ stage นี้อยู่ (ต้องตรงกับ logic ใน get_challenge_groups)
+fn group_of_stage(id: u32) -> u32 {
+    if id < 100 {
+        100
+    } else if id < 1000 {
+        900
+    } else if id < 20000 {
+        id / 100
+    } else {
+        id / 10
+    }
+}
+
+/// ดาวรวมของกลุ่ม (3 ดาวต่อ stage) — ใส่ใน taken_stars_count_reward เพื่อให้รางวัลดาวถือว่ารับครบ
+fn group_total_stars(group_id: u32) -> u64 {
+    get_challenge_stages_list()
+        .into_iter()
+        .filter(|&id| group_of_stage(id) == group_id)
+        .count() as u64
+        * 3
+}
+
 fn get_challenge_list() -> Vec<Challenge> {
     let make_challenge = |id: u32| Challenge {
         challenge_id: id,
@@ -109,14 +154,14 @@ fn get_challenge_list() -> Vec<Challenge> {
         hgpkmhfpmbj: false, // NOT first open (already cleared, allows unlocking next stages)
         score_two: if (20000..30000).contains(&id) {
             80000
-        } else if id >= 30000 {
+        } else if id >= 30000 || (5000..6000).contains(&id) {
             4000
         } else {
             0
         },
         score_id: if (20000..30000).contains(&id) {
             80000
-        } else if id >= 30000 {
+        } else if id >= 30000 || (5000..6000).contains(&id) {
             4000
         } else {
             0
@@ -135,15 +180,25 @@ pub async fn on_get_challenge_cs_req(
     _req: &GetChallengeCsReq,
     res: &mut GetChallengeScRsp,
 ) {
+    let groups = get_challenge_groups();
+
     res.retcode = 0;
-    res.challenge_group_list = get_challenge_groups()
-        .into_iter()
-        .map(|group_id| ChallengeGroup {
+    res.challenge_group_list = groups
+        .iter()
+        .map(|&group_id| ChallengeGroup {
             group_id,
-            taken_stars_count_reward: 0,
+            taken_stars_count_reward: group_total_stars(group_id),
         })
         .collect();
-    res.kkiafpfklge = Vec::new();
+    // สถานะปลดล็อกของแต่ละกลุ่ม — ถ้าไม่ส่ง กลุ่มใหม่ (tierce 4.6) จะโชว์ไม่ปลดใน UI
+    res.kkiafpfklge = groups
+        .iter()
+        .map(|&group_id| Fmdaaiklaja {
+            group_id,
+            jfkmnbhobcl: true,
+            egllmgllhdl: true,
+        })
+        .collect();
     res.challenge_list = get_challenge_list();
 
     let mut max_levels = Vec::new();
@@ -178,6 +233,182 @@ pub async fn on_get_challenge_cs_req(
     });
 
     res.max_level_list = max_levels;
+}
+
+/// Starward Mode (ChallengePeak) — ส่งข้อมูลปลดครบทุก peak ให้ UI ไม่โชว์ No Data
+/// แบ่ง peak stage เป็นกลุ่มตามหลักร้อย (101-104 → group 1, 201-204 → group 2, ...)
+pub fn peak_stage_group(stage_id: u32) -> u32 {
+    stage_id / 100
+}
+
+pub async fn on_get_challenge_peak_data_cs_req(
+    _session: &mut PlayerSession,
+    _req: &GetChallengePeakDataCsReq,
+    res: &mut GetChallengePeakDataScRsp,
+) {
+    res.retcode = 0;
+    res.current_peak_group_id = 1;
+
+    // จัดกลุ่มจาก peak.stages จริงใน challenge_data.json
+    let mut groups: BTreeMap<u32, Vec<(u32, &PeakStageData)>> = BTreeMap::new();
+    for (k, stage) in &CHALLENGE_DATA.peak {
+        if let Ok(id) = k.parse::<u32>() {
+            groups.entry(peak_stage_group(id)).or_default().push((id, stage));
+        }
+    }
+
+    if groups.is_empty() {
+        // fallback ถ้าไม่มี peak data
+        let mut peak_group = ChallengePeakGroup {
+            peak_group_id: 1,
+            obtained_stars: 9,
+            count_of_peaks: 3,
+            disable_hard_mode: false,
+            taken_star_rewards: vec![1, 2, 3, 4, 5, 6, 7, 8, 9],
+            ..Default::default()
+        };
+        for peak_id in 1..=3 {
+            peak_group.peaks.push(ChallengePeak {
+                peak_id,
+                has_passed: true,
+                cycles_used: 0,
+                finished_target_list: vec![1, 2, 3, 4, 5],
+                ..Default::default()
+            });
+        }
+        res.challenge_peak_groups.push(peak_group);
+        return;
+    }
+
+    for (group_id, mut stages) in groups {
+        stages.sort_by_key(|(id, _)| *id);
+
+        let mut peak_group = ChallengePeakGroup {
+            peak_group_id: group_id,
+            obtained_stars: 0,
+            count_of_peaks: stages.len() as u32,
+            disable_hard_mode: false,
+            taken_star_rewards: Vec::new(),
+            ..Default::default()
+        };
+
+        for (peak_id, stage) in &stages {
+            let stars = stage.targets.len() as u32;
+            peak_group.obtained_stars += stars;
+            for t in 1..=stars {
+                peak_group
+                    .taken_star_rewards
+                    .push(peak_group.obtained_stars - stars + t);
+            }
+
+            peak_group.peaks.push(ChallengePeak {
+                peak_id: *peak_id,
+                has_passed: true,
+                cycles_used: 0,
+                finished_target_list: stage.targets.clone(),
+                ..Default::default()
+            });
+        }
+
+        res.challenge_peak_groups.push(peak_group);
+    }
+}
+
+pub async fn on_get_cur_challenge_peak_cs_req(
+    _session: &mut PlayerSession,
+    _req: &GetCurChallengePeakCsReq,
+    res: &mut GetCurChallengePeakScRsp,
+) {
+    res.retcode = 0;
+    res.has_passed = true;
+    res.peak_id = 1;
+    res.boss_buff_id = 0;
+}
+
+/// Starward Mode — เริ่มแชลเลนจ์ peak (cmd 8948)
+/// StartChallengePeakScRsp (8950) ไม่มี scene field — ส่งฉากผ่าน EnterSceneByServerScNotify แยก
+pub async fn on_start_challenge_peak_cs_req(
+    session: &mut PlayerSession,
+    req: &StartChallengePeakCsReq,
+    res: &mut StartChallengePeakScRsp,
+) {
+    res.retcode = 0;
+
+    let peak_id = req.peak_id;
+    let stage = CHALLENGE_DATA.peak.get(&peak_id.to_string());
+    let (event_id, monster_id, buff) = match stage {
+        Some(s) => (
+            s.event_id,
+            s.monster_id,
+            if req.boss_buff_id != 0 { req.boss_buff_id } else { s.default_buff },
+        ),
+        None => {
+            tracing::warn!("[PEAK] peak_id={peak_id} not found in challenge_data!");
+            return;
+        }
+    };
+    tracing::info!(
+        "[PEAK] Start: peak_id={peak_id} event={event_id} monster={monster_id} buff={buff}"
+    );
+
+    let mut avatars = req.peak_avatar_id_list.clone();
+    avatars.dedup();
+    avatars.truncate(4);
+    if avatars.is_empty() {
+        if let Some(json) = session.json_data.get() {
+            avatars = json.lineups.values().copied().collect();
+        }
+    }
+
+    if let Some(json) = session.json_data.get_mut() {
+        let mut custom_lineup = BTreeMap::new();
+        for (i, &aid) in avatars.iter().enumerate() {
+            custom_lineup.insert(i as u32, aid);
+        }
+        json.battle_config.custom_battle_lineup = Some(custom_lineup);
+        json.battle_config.stage_id = event_id;
+        json.battle_config.cycle_count = 30;
+        json.battle_config.battle_type = BattleType::Default;
+        json.battle_config.monsters = vec![vec![Monster {
+            level: 68,
+            monster_id,
+            max_hp: 0,
+        }]];
+        if buff != 0 {
+            json.battle_config.blessings = vec![BattleBuffJson {
+                id: buff,
+                level: 1,
+                dynamic_key: None,
+                dynamic_values: Vec::new(),
+            }];
+        }
+        let _ = json.save_persistent().await;
+    }
+
+    // ใช้ arena มาตรฐาน 3000101 (group 2 = ตำแหน่งบอส) สำหรับ peak battle
+    let scene_result =
+        load_challenge_scene(session, 3000101, 2, monster_id, event_id, &avatars).await;
+    let Ok((scene_info, _motion)) = scene_result else {
+        tracing::error!("[PEAK] Failed to load peak arena scene!");
+        return;
+    };
+
+    let mut custom_map = BTreeMap::new();
+    for (i, &aid) in avatars.iter().enumerate() {
+        custom_map.insert(i as u32, aid);
+    }
+    let lineup_info = AvatarJson::to_lineup_info(&custom_map);
+
+    if let Err(e) = session
+        .send(EnterSceneByServerScNotify {
+            scene: Some(scene_info),
+            lineup: Some(lineup_info),
+            ..Default::default()
+        })
+        .await
+    {
+        tracing::error!("[PEAK] Failed to send scene notify: {e:?}");
+    }
 }
 
 pub async fn on_get_cur_challenge_cs_req(
@@ -484,22 +715,26 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
     let mut req = DecodedChallengeStart::default();
     let mut buf = payload;
 
+    // 4.6: challenge_id = tag 14, first_lineup = tag 6, second_lineup = tag 8,
+    //       avatar_lineup_first = tag 4 (AvatarLineup), stage_info = tag 10 (ChallengeBuffInfo)
     while !buf.is_empty() {
         if let Ok(tag) = prost::encoding::decode_varint(&mut buf) {
             let field_number = (tag >> 3) as u32;
             let wire_type = (tag & 0x7) as u32;
             match (field_number, wire_type) {
-                (12, 0) => {
+                (14, 0) | (12, 0) => {
                     if let Ok(v) = prost::encoding::decode_varint(&mut buf) {
-                        req.challenge_id = v as u32;
+                        if req.challenge_id == 0 {
+                            req.challenge_id = v as u32;
+                        }
                     }
                 }
-                (3, 0) => {
+                (6, 0) => {
                     if let Ok(v) = prost::encoding::decode_varint(&mut buf) {
                         req.first_avatars.push(v as u32);
                     }
                 }
-                (3, 2) => {
+                (6, 2) => {
                     if let Ok(len) = prost::encoding::decode_varint(&mut buf) {
                         let len = len as usize;
                         if len <= buf.len() {
@@ -515,12 +750,12 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
                         }
                     }
                 }
-                (4, 0) => {
+                (8, 0) => {
                     if let Ok(v) = prost::encoding::decode_varint(&mut buf) {
                         req.second_avatars.push(v as u32);
                     }
                 }
-                (4, 2) => {
+                (8, 2) => {
                     if let Ok(len) = prost::encoding::decode_varint(&mut buf) {
                         let len = len as usize;
                         if len <= buf.len() {
@@ -536,7 +771,8 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
                         }
                     }
                 }
-                (6, 2) => {
+                (4, 2) => {
+                    // AvatarLineup: id = tag 1
                     if let Ok(len) = prost::encoding::decode_varint(&mut buf) {
                         let len = len as usize;
                         if len <= buf.len() {
@@ -546,7 +782,7 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
                                 if let Ok(stag) = prost::encoding::decode_varint(&mut sub) {
                                     let sfn = (stag >> 3) as u32;
                                     let swt = (stag & 0x7) as u32;
-                                    if sfn == 9 && swt == 0 {
+                                    if sfn == 1 && swt == 0 {
                                         if let Ok(v) = prost::encoding::decode_varint(&mut sub) {
                                             req.first_avatars.push(v as u32);
                                         }
@@ -561,6 +797,8 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
                     }
                 }
                 (10, 2) => {
+                    // ChallengeBuffInfo { story_info = 9, boss_info = 10 }
+                    // story: buff_one = 10, buff_two = 15 / boss: buff_one = 15, buff_two = 4
                     if let Ok(len) = prost::encoding::decode_varint(&mut buf) {
                         let len = len as usize;
                         if len <= buf.len() {
@@ -570,9 +808,34 @@ pub fn decode_start_challenge_req(payload: &[u8]) -> DecodedChallengeStart {
                                 if let Ok(stag) = prost::encoding::decode_varint(&mut sub) {
                                     let sfn = (stag >> 3) as u32;
                                     let swt = (stag & 0x7) as u32;
-                                    if sfn == 9 && swt == 0 {
-                                        if let Ok(v) = prost::encoding::decode_varint(&mut sub) {
-                                            req.second_avatars.push(v as u32);
+                                    if swt == 2 && (sfn == 9 || sfn == 10) {
+                                        if let Ok(l2) = prost::encoding::decode_varint(&mut sub) {
+                                            let l2 = l2 as usize;
+                                            if l2 <= sub.len() {
+                                                let mut inner = &sub[..l2];
+                                                sub = &sub[l2..];
+                                                while !inner.is_empty() {
+                                                    if let Ok(t2) =
+                                                        prost::encoding::decode_varint(&mut inner)
+                                                    {
+                                                        let f2 = (t2 >> 3) as u32;
+                                                        let w2 = (t2 & 0x7) as u32;
+                                                        if w2 == 0 && (f2 == 10 || f2 == 15) {
+                                                            if let Ok(v) = prost::encoding::
+                                                                decode_varint(&mut inner)
+                                                            {
+                                                                if req.buff_id == 0 {
+                                                                    req.buff_id = v as u32;
+                                                                }
+                                                            }
+                                                        } else {
+                                                            skip_wire_field(w2, &mut inner);
+                                                        }
+                                                    } else {
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                         }
                                     } else {
                                         skip_wire_field(swt, &mut sub);
@@ -839,7 +1102,7 @@ pub async fn handle_start_challenge(session: &mut PlayerSession, payload: &[u8])
     let req = decode_start_challenge_req(payload);
     tracing::info!("handle_start_challenge: challenge_id={}", req.challenge_id);
 
-    let chosen_avatars = if !req.first_avatars.is_empty() {
+    let mut chosen_avatars = if !req.first_avatars.is_empty() {
         req.first_avatars.clone()
     } else if let Some(json) = session.json_data.get() {
         json.lineups.values().copied().collect()
@@ -847,11 +1110,25 @@ pub async fn handle_start_challenge(session: &mut PlayerSession, payload: &[u8])
         vec![1304, 1313, 1406, 1004]
     };
 
+    // กันทีมเกิน 4 ตัว (client ส่งทั้ง avatar_lineup_first และ first_lineup ซ้ำกันได้
+    // ทำให้ TeamManager IndexOutOfRange แล้ว crash ตอนโหลด arena)
+    chosen_avatars.dedup();
+    chosen_avatars.truncate(4);
+
     let base_id = map_challenge_stage_id(req.challenge_id);
     let (entrance, group, monster, event, buff) = if let Some(c) = CHALLENGE_DATA.challenges.get(&base_id) {
         (c.entrance, c.group1, c.monster1, c.event1, if req.buff_id != 0 { req.buff_id } else { c.buff })
     } else {
         (3014101, 5, 4033010, 30124011, 0)
+    };
+
+    // ใช้ arena จริงตาม challenge data (รอบก่อน crash เพราะทีมเกิน 4 ตัว — แก้แล้ว)
+    // fallback กลับ 3000101 (arena มาตรฐาน) ถ้า arena ที่แมปไม่มีใน res
+    let entrance = if GAME_RES.level_output_configs.contains_key(&entrance) {
+        entrance
+    } else {
+        tracing::warn!("[CHALLENGE] Arena entrance {entrance} missing in res.json, fallback to 3000101");
+        3000101
     };
 
     tracing::info!("[CHALLENGE] Start: challenge_id={} (mapped to {})", req.challenge_id, base_id);
@@ -911,43 +1188,38 @@ pub async fn handle_start_challenge(session: &mut PlayerSession, payload: &[u8])
     };
 
     let mut body = Vec::new();
-    // tag 7: retcode = 0
-    body.extend_from_slice(&[0x38, 0x00]);
+    // StartChallengeScRsp 4.6.51 layout: retcode = 3, cur_challenge = 5, lineup_list = 6, scene = 10
+    // tag 3: retcode = 0
+    body.extend_from_slice(&[0x18, 0x00]);
 
-    // tag 3: lineup_list
-    let mut lineup_buf = Vec::new();
-    lineup_info.encode(&mut lineup_buf)?;
-    body.push(0x1A);
-    prost::encoding::encode_varint(lineup_buf.len() as u64, &mut body);
-    body.extend_from_slice(&lineup_buf);
-
-    // tag 14: cur_challenge
+    // tag 5: cur_challenge
     let mut chal_buf = Vec::new();
     cur_challenge.encode(&mut chal_buf)?;
-    body.push(0x72);
+    body.push(0x2A);
     prost::encoding::encode_varint(chal_buf.len() as u64, &mut body);
     body.extend_from_slice(&chal_buf);
 
-    // tag 15: scene
+    // tag 6: lineup_list
+    let mut lineup_buf = Vec::new();
+    lineup_info.encode(&mut lineup_buf)?;
+    body.push(0x32);
+    prost::encoding::encode_varint(lineup_buf.len() as u64, &mut body);
+    body.extend_from_slice(&lineup_buf);
+
+    // tag 10: scene
     let mut scene_buf = Vec::new();
     scene_info.encode(&mut scene_buf)?;
-    body.push(0x7A);
+    body.push(0x52);
     prost::encoding::encode_varint(scene_buf.len() as u64, &mut body);
     body.extend_from_slice(&scene_buf);
 
     session.send_raw(NetPacket {
-        cmd_type: 1775, // Modern 4.5.52 StartChallengeScRsp
-        head: Vec::new(),
-        body: body.clone(),
-    }).await?;
-
-    let _ = session.send_raw(NetPacket {
-        cmd_type: 1758, // Legacy fallback
+        cmd_type: 1787, // 4.6.51 CmdStartChallengeScRsp
         head: Vec::new(),
         body,
-    }).await;
+    }).await?;
 
-    // Note: Do NOT send EnterSceneByServerScNotify (1427) because 1775 already contains SceneInfo!
+    // Note: Do NOT send EnterSceneByServerScNotify (1427) because 1787 already contains SceneInfo!
     Ok(())
 }
 

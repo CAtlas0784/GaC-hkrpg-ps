@@ -14,7 +14,7 @@ pub fn init_tracing() {
 async fn main() -> Result<()> {
     init_tracing();
     println!("============================================================");
-    println!("  [Hoyo-hkrpg-PS] Gameserver (v4.5) - ONLINE");
+    println!("  [GaC hkrpg ps] Gameserver (v4.5) - ONLINE");
     println!("  Listening on UDP port 23301 (KCP Gateway)");
     println!("  Ready for StarRail client connection...");
     println!("============================================================");

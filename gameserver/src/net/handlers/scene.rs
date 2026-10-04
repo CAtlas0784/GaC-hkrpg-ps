@@ -8,6 +8,19 @@ use crate::util::{self};
 
 use super::*;
 
+/// เขียน log สำคัญลงไฟล์เพื่อวิเคราะห์พฤติกรรม client (วาป/คุย)
+pub fn scene_debug_log(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("server_debug.log")
+    {
+        let ts = util::cur_timestamp_ms();
+        let _ = writeln!(f, "[{ts}] {msg}");
+    }
+}
+
 pub async fn on_get_cur_scene_info_cs_req(
     session: &mut PlayerSession,
     _body: &GetCurSceneInfoCsReq,
@@ -51,6 +64,10 @@ pub async fn on_enter_scene_cs_req(
         "on_enter_scene_cs_req: entry_id={}, teleport_id={}, interact_id={}, scene_identifier={:?}",
         req.entry_id, req.teleport_id, req.interact_id, req.scene_identifier
     );
+    scene_debug_log(&format!(
+        "ENTER_SCENE entry_id={} teleport_id={} interact_id={} scene_identifier={:?}",
+        req.entry_id, req.teleport_id, req.interact_id, req.scene_identifier
+    ));
 
     let resolved_entry_id = if req.entry_id != 0 && GAME_RES.level_output_configs.contains_key(&req.entry_id) {
         req.entry_id
@@ -133,11 +150,19 @@ pub async fn on_enter_scene_cs_req(
 
     match load_scene(session, resolved_entry_id, true, teleport_id, req.scene_identifier).await {
         Ok(scene_info) => {
+            scene_debug_log(&format!(
+                "ENTER_SCENE_RESOLVED requested_entry={} resolved_entry={}",
+                req.entry_id, resolved_entry_id
+            ));
             res.retcode = 0;
             res.scene_identifier = scene_info.scene_identifier;
             res.is_close_map = req.is_close_map;
         }
         Err(e) => {
+            scene_debug_log(&format!(
+                "ENTER_SCENE_FAILED requested_entry={} resolved_entry={} err={e:?}",
+                req.entry_id, resolved_entry_id
+            ));
             tracing::error!("Failed to enter scene {}: {:?}", resolved_entry_id, e);
             res.retcode = 2605;
         }
@@ -145,7 +170,7 @@ pub async fn on_enter_scene_cs_req(
 }
 
 pub async fn on_interact_prop_cs_req(
-    _session: &mut PlayerSession,
+    session: &mut PlayerSession,
     req: &InteractPropCsReq,
     res: &mut InteractPropScRsp,
 ) {
@@ -153,9 +178,44 @@ pub async fn on_interact_prop_cs_req(
         "on_interact_prop_cs_req: prop_entity_id={}, interact_id={}, interact_id2={}",
         req.prop_entity_id, req.interact_id, req.interact_id2
     );
+    scene_debug_log(&format!(
+        "INTERACT_PROP prop_entity_id={} interact_id={} interact_id2={} (current scene: entry={} plane={} floor={})",
+        req.prop_entity_id,
+        req.interact_id,
+        req.interact_id2,
+        session
+            .json_data
+            .get()
+            .map(|p| p.scene.entry_id)
+            .unwrap_or(0),
+        session.json_data.get().map(|p| p.scene.plane_id).unwrap_or(0),
+        session.json_data.get().map(|p| p.scene.floor_id).unwrap_or(0),
+    ));
+
+    // ค้น prop จริงจาก mapping ที่เก็บตอนโหลดฉาก เพื่อตอบ state ที่ถูกต้อง
+    // หมายเหตุ: interact_id2 คือ interaction id ฝั่ง client ไม่ใช่ prop state
+    // ตอบ state ผิด (เช่น 1100) จะทำให้ interaction พัง/จุดเข้าเปิด UI ไม่ได้
+    let real_prop = session.prop_entities.get(&req.prop_entity_id).copied();
+    scene_debug_log(&format!(
+        "INTERACT_PROP_RESOLVED entity_id={} -> {:?} interact_id2={}",
+        req.prop_entity_id, real_prop, req.interact_id2
+    ));
+
     res.retcode = 0;
     res.prop_entity_id = req.prop_entity_id;
-    res.prop_state = if req.interact_id2 != 0 { req.interact_id2 } else { 1 };
+    res.prop_state = real_prop.map(|(_, _, state)| state).unwrap_or(1);
+}
+
+pub async fn on_get_npc_taken_reward_cs_req(
+    _session: &mut PlayerSession,
+    req: &GetNpcTakenRewardCsReq,
+    res: &mut GetNpcTakenRewardScRsp,
+) {
+    // client เรียกตอนโต้ตอบ NPC เพื่อถามสถานะ talk/reward ของ NPC
+    // ถ้าไม่ตอบ หน้าต่างคุยจะไม่มีตัวเลือกให้กดและค้าง
+    scene_debug_log(&format!("GET_NPC_TAKEN_REWARD npc_id={}", req.npc_id));
+    res.retcode = 0;
+    res.npc_id = req.npc_id;
 }
 
 pub async fn on_get_scene_map_info_cs_req(
@@ -355,15 +415,50 @@ async fn load_scene(
             json_pos.rot_y = teleport.rot.y;
         }
     } else if is_enter_scene || json_pos.y < -5000 {
-        if let Some((_, teleport)) = scene
+        let first_teleport = scene
             .scenes
-            .iter()
-            .find_map(|v| v.1.teleports.iter().next())
-        {
+            .values()
+            .find_map(|g| g.teleports.values().next())
+            .or_else(|| {
+                // fallback: หาจาก teleports.json (ครอบคลุมทุกแมพ รวมจุดเข้า Endgame)
+                common::resources::TELEPORT_DB
+                    .get(&floor_id)
+                    .and_then(|m| m.values().next())
+            });
+        let first_prop = scene
+            .scenes
+            .values()
+            .flat_map(|g| g.props.iter())
+            .next();
+
+        if let Some(teleport) = first_teleport {
             json_pos.x = teleport.pos.x;
             json_pos.y = teleport.pos.y;
             json_pos.z = teleport.pos.z;
             json_pos.rot_y = teleport.rot.y;
+        } else if let Some(prop) = first_prop {
+            // Endgame/arena floors in res.json have no teleports at all.
+            // Spawn the player near the first prop (the interactable entrance)
+            // facing it, so the lobby is reachable on foot.
+            let dx = 0 - prop.pos.x;
+            let dz = 0 - prop.pos.z;
+            let dist = ((dx * dx + dz * dz) as f64).sqrt();
+            let (nx, nz) = if dist > 1000.0 {
+                (dx as f64 / dist, dz as f64 / dist)
+            } else {
+                (0.0, 1.0)
+            };
+            let offset = 2500.0_f64.min(dist.max(1000.0));
+            json_pos.x = prop.pos.x + (nx * offset) as i32;
+            json_pos.y = prop.pos.y;
+            json_pos.z = prop.pos.z + (nz * offset) as i32;
+
+            let ang = (-nx).atan2(-nz) * 180.0 / std::f64::consts::PI;
+            let mut deg = ang as i32;
+            if deg < 0 {
+                deg += 360;
+            }
+            json_pos.rot_y = deg * 1000;
         }
     }
 
@@ -439,6 +534,8 @@ async fn load_scene(
     let mut npc_entity_id = 20_000;
     let mut monster_entity_id = 30_000;
 
+    session.prop_entities.clear();
+
     for (group_id, group) in &scene.scenes {
         let mut group_info = SceneEntityGroupInfo {
             group_id: *group_id,
@@ -448,6 +545,10 @@ async fn load_scene(
         // Load Props
         for prop in &group.props {
             prop_entity_id += 1;
+            session.prop_entities.insert(
+                prop_entity_id,
+                (prop.prop_id, prop.inst_id, prop.prop_state),
+            );
 
             let prop_position = Position {
                 x: (prop.pos.x),
@@ -704,6 +805,10 @@ pub async fn load_challenge_scene(
             };
             for prop in &group.props {
                 prop_entity_id += 1;
+                session.prop_entities.insert(
+                    prop_entity_id,
+                    (prop.prop_id, prop.inst_id, prop.prop_state),
+                );
                 group_info.entity_list.push(SceneEntityInfo {
                     inst_id: prop.inst_id,
                     group_id: prop.group_id,

@@ -74,16 +74,51 @@ pub async fn on_replace_lineup_cs_req(
         return;
     };
 
-    let lineups = &mut player.lineups;
-    for (slot, avatar_id) in &mut *lineups {
-        if let Some(lineup) = req.lineup_slot_list.get(*slot as usize) {
-            *avatar_id = lineup.id;
-        } else {
-            *avatar_id = 0;
-        }
+    // ล้าง slot เก่าแล้วเซ็ตตาม slot ที่ client ส่งมาจริง
+    for item in &req.lineup_slot_list {
+        player.lineups.insert(item.slot, item.id);
     }
     player.save_persistent().await;
     refresh_lineup(session).await;
+}
+
+pub async fn on_swap_lineup_cs_req(
+    session: &mut PlayerSession,
+    req: &SwapLineupCsReq,
+    _res: &mut SwapLineupScRsp,
+) {
+    let Some(player) = session.json_data.get_mut() else {
+        tracing::error!("data is not set!");
+        return;
+    };
+
+    // mpiegfcnben (tag 7) / enbibcppldc (tag 12) คือ src_slot / dst_slot ที่ถูก obfuscate
+    // การสลับเป็น operation สมมาตร จึงไม่มีผลว่า mapping ตัวไหนเป็น src หรือ dst
+    let src_slot = req.mpiegfcnben;
+    let dst_slot = req.enbibcppldc;
+
+    let src_avatar = player.lineups.get(&src_slot).copied().unwrap_or(0);
+    let dst_avatar = player.lineups.get(&dst_slot).copied().unwrap_or(0);
+    player.lineups.insert(src_slot, dst_avatar);
+    player.lineups.insert(dst_slot, src_avatar);
+    player.save_persistent().await;
+    refresh_lineup(session).await;
+}
+
+pub async fn on_switch_lineup_index_cs_req(
+    session: &mut PlayerSession,
+    _req: &SwitchLineupIndexCsReq,
+    _res: &mut SwitchLineupIndexScRsp,
+) {
+    refresh_lineup(session).await;
+}
+
+pub async fn on_get_lineup_avatar_data_cs_req(
+    _session: &mut PlayerSession,
+    _req: &GetLineupAvatarDataCsReq,
+    res: &mut GetLineupAvatarDataScRsp,
+) {
+    res.retcode = 0;
 }
 
 pub async fn on_quit_lineup_cs_req(

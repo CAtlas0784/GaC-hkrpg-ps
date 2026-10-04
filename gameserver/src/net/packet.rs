@@ -122,7 +122,10 @@ macro_rules! trait_handler {
                     session.send_dummy_response(cmd_id).await?;
                     return Ok(());
                 }
-
+                if PlayerSession::should_send_dummy_rsp(cmd_id) {
+                    session.send_dummy_response(cmd_id).await?;
+                    return Ok(());
+                }
 
                 match cmd_id {
                     $(
@@ -376,7 +379,11 @@ macro_rules! trait_handler {
                         challenge::handle_take_challenge_reward(session, &payload).await
                     }
                     188 => {
-                        Self::on_get_cur_battle_info_cs_req(session, &proto::GetCurBattleInfoCsReq::default()).await?;
+                        session.send_raw(NetPacket {
+                            cmd_type: 181,
+                            head: Vec::new(),
+                            body: vec![0x50, 0x00],
+                        }).await?;
                         Ok(())
                     }
                     4130 => {
@@ -396,6 +403,9 @@ macro_rules! trait_handler {
                         Ok(())
                     }
                     _ => {
+                        // หมายเหตุ: ห้ามตอบ ScRsp ว่างให้ cmd ที่ไม่รู้จัก —
+                        // client modules (GridFight/ChessRogue/EvolveBuild/ChimeraDuel/Jukebox)
+                        // จะ Sync(nil) แล้ว NRE จน game state machine ไม่ไปต่อ (จอดำ)
                         if cmd_id != 7159 {
                             tracing::warn!("Unknown command ID: {cmd_id}");
                         }
@@ -420,6 +430,8 @@ trait_handler! {
     SetAvatarEnhancedId;
     TakePromotionReward;
     SyncClientResVersion;
+    GetTutorial;
+    GetTutorialGuide;
 
     // Entity move (dummy!)
     SceneEntityMove;
@@ -444,6 +456,14 @@ trait_handler! {
     ChangeLineupLeader;
     ReplaceLineup;
     QuitLineup;
+    SwapLineup;
+    SwitchLineupIndex;
+    GetLineupAvatarData;
+
+    // Avatar skin / outfit
+    DressAvatarSkin;
+    TakeOffAvatarSkin;
+    SetPlayerOutfit;
 
     // Battle
     StartCocoonStage;
@@ -458,6 +478,7 @@ trait_handler! {
     GetSceneMapInfo;
     EnterScene;
     InteractProp;
+    GetNpcTakenReward;
 
     // Optional
     GetMail;
@@ -471,4 +492,7 @@ trait_handler! {
     GetChallenge;
     GetCurChallenge;
     GetActivityScheduleConfig;
+    GetChallengePeakData;
+    GetCurChallengePeak;
+    StartChallengePeak;
 }

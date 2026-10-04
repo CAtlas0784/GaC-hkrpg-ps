@@ -201,6 +201,7 @@ impl AvatarJson {
         &self,
         lightcone: Option<&Lightcone>,
         relics: Vec<&Relic>,
+        dressed_skin_id: u32,
     ) -> AvatarPathData {
         AvatarPathData {
             avatar_id: self.avatar_id,
@@ -219,7 +220,7 @@ impl AvatarJson {
             path_equipment_id: lightcone.map(|v| v.get_unique_id()).unwrap_or_default(),
             enhanced_id: self.enhanced_id.unwrap_or_default(),
             unlock_timestamp: 0,
-            dressed_skin_id: 0,
+            dressed_skin_id,
             ..Default::default()
         }
     }

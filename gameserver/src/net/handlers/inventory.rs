@@ -36,7 +36,8 @@ pub async fn on_get_archive_data_cs_req(
     _: &GetArchiveDataCsReq,
     res: &mut GetArchiveDataScRsp,
 ) {
-    res.archive_data = Some(ArchiveData::default());
+    res.retcode = 0;
+    res.archive_data = None;
 }
 
 pub async fn on_dress_relic_avatar_cs_req(

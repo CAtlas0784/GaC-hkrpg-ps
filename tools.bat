@@ -1,18 +1,25 @@
 @echo off
 setlocal enabledelayedexpansion
-title Hoyo-hkrpg-PS - Private Server Development Suite [powered by AstralOS]
+title GaC hkrpg ps - Private Server Development Suite [powered by AstralOS]
 color 0B
 chcp 65001 > nul
 cd /d "%~dp0"
 
-set "ASTRALOS_DIR=C:\Users\Phitchayut\Desktop\AstralOS"
+set "ASTRALOS_DIR="
+if exist "%~dp0..\AstralOS" set "ASTRALOS_DIR=%~dp0..\AstralOS"
+if not defined ASTRALOS_DIR if exist "%USERPROFILE%\Desktop\AstralOS" set "ASTRALOS_DIR=%USERPROFILE%\Desktop\AstralOS"
 
 :: ========================================================================
 :: Auto-detect Game Directory
 :: ========================================================================
 set "GAME_DIR="
-if exist "E:\beta hsr\StarRail_4.5.52_OS\StarRail.exe" (
-    set "GAME_DIR=E:\beta hsr\StarRail_4.5.52_OS"
+if exist "%USERPROFILE%\Desktop\StarRail_4.6.51_OS\StarRail.exe" (
+    set "GAME_DIR=%USERPROFILE%\Desktop\StarRail_4.6.51_OS"
+)
+if not defined GAME_DIR (
+    if exist "E:\beta hsr\StarRail_4.5.52_OS\StarRail.exe" (
+        set "GAME_DIR=E:\beta hsr\StarRail_4.5.52_OS"
+    )
 )
 if not defined GAME_DIR (
     if exist "D:\HoYoPlay\games\Star Rail Games\StarRail.exe" (
@@ -33,7 +40,7 @@ if not defined GAME_DIR (
 :menu
 cls
 echo ==============================================================================
-echo   [ Hoyo-hkrpg-PS ] Private Server Development Suite ^& Toolkit
+echo   [ GaC-hkrpg-ps ] Private Server Development Suite ^& Toolkit
 echo   Integrated with AstralOS Reverse Engineering Engine
 echo ==============================================================================
 echo.
@@ -69,11 +76,19 @@ if exist "!GAME_DIR!\launcher.exe" if exist "!GAME_DIR!\hkrpg.dll" (
     set "STATUS_HOOK=[NOT HOOKED] No proxy hook in Game Folder"
 )
 
+tasklist /FI "IMAGENAME eq GayProxy.exe" 2>nul | findstr /i "GayProxy.exe" >nul 2>&1
+if !errorlevel! equ 0 (
+    set "STATUS_GAYPROXY=[ONLINE]   Gay Proxy           [System MITM active]"
+) else (
+    set "STATUS_GAYPROXY=[OFFLINE]  Gay Proxy           [System MITM standby]"
+)
+
 echo   [ STATUS ] -----------------------------------------------------------------
 echo     !STATUS_ADMIN!
 echo     !STATUS_HTTP!
 echo     !STATUS_KCP!
 echo     !STATUS_HOOK!
+echo     !STATUS_GAYPROXY!
 if defined GAME_DIR (
     echo     [CLIENT]   !GAME_DIR!
 ) else (
@@ -86,6 +101,8 @@ echo     [1] 1-Click PS Dev Mode [Start PS Server + Hook + Launch Game Client]
 echo     [2] Launch Game Client with Hook [Connect to Already Running PS]
 echo     [3] Fix ^& Lock version.dll Hook [Prevent Game from Renaming/Disabling]
 echo     [4] Stop All Running PS Servers [Kill :21000 ^& :23301]
+echo     [G] Launch Gay Proxy [Alternative Network Proxy Mode]
+echo     [R] Reset Windows System Proxy [Emergency WinINet Flush]
 echo.
 echo   [ PROTOBUF, PACKETS ^& REVERSE ENGINEERING ] -------------------------------
 echo     [5] Dump StarRail.proto ^& packetIds.json [Morax IL2CPP Parser]
@@ -106,13 +123,16 @@ if not defined INITIAL_ARG (
     set "choice="
 )
 
-if not defined choice set /p choice="   Select option [0-9]> "
+if not defined choice set /p choice="   Select option [0-9, G, R]> "
 if not defined choice goto menu
 
 if "%choice%"=="1" goto dev_mode_all
 if "%choice%"=="2" goto launch_client_only
 if "%choice%"=="3" goto fix_hook_dll
 if "%choice%"=="4" goto stop_servers
+if /i "%choice%"=="G" goto launch_gay_proxy
+if /i "%choice%"=="F" goto launch_gay_proxy
+if /i "%choice%"=="R" goto reset_win_proxy
 if "%choice%"=="5" goto dump_morax_proto
 if "%choice%"=="6" goto compile_res_json
 if "%choice%"=="7" goto switch_lang
@@ -127,7 +147,7 @@ goto menu
 :dev_mode_all
 echo.
 echo ==============================================================================
-echo   [1-Click PS Dev Mode] Launching Hoyo-hkrpg-PS + Client Hook...
+echo   [1-Click PS Dev Mode] Launching GaC-hkrpg-ps + Client Hook...
 echo ==============================================================================
 echo.
 
@@ -208,12 +228,63 @@ goto menu
 :: ========================================================================
 :stop_servers
 echo.
-echo [*] Terminating Hoyo-hkrpg-PS and AstralOS server processes...
+echo [*] Terminating GaC-hkrpg-ps, AstralOS, and Gay Proxy processes...
 taskkill /F /IM sdkserver.exe /T >nul 2>&1
 taskkill /F /IM gameserver.exe /T >nul 2>&1
 taskkill /F /IM robinsr.exe /T >nul 2>&1
-echo [OK] All local servers stopped. Ports 21000 ^& 23301 are free!
+taskkill /F /IM GayProxy.exe /T >nul 2>&1
+taskkill /F /IM GayProxy.Guardian.exe /T >nul 2>&1
+set "GAYPROXY_DIR="
+if exist "%~dp0..\Gay Proxy" set "GAYPROXY_DIR=%~dp0..\Gay Proxy"
+if not defined GAYPROXY_DIR if exist "%USERPROFILE%\Desktop\Gay Proxy" set "GAYPROXY_DIR=%USERPROFILE%\Desktop\Gay Proxy"
+if exist "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" (
+    "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" --clean >nul 2>&1
+)
+echo [OK] All local servers stopped. Ports 21000 ^& 23301 are free, proxy restored!
 ping 127.0.0.1 -n 2 > nul
+goto menu
+
+:: ========================================================================
+:: [G] Launch Gay Proxy (Alternative Network Proxy Mode)
+:: ========================================================================
+:launch_gay_proxy
+echo.
+echo ==============================================================================
+echo   [Gay Proxy] Launching Alternative System Proxy Mode...
+echo ==============================================================================
+set "GAYPROXY_DIR="
+if exist "%~dp0..\Gay Proxy" set "GAYPROXY_DIR=%~dp0..\Gay Proxy"
+if not defined GAYPROXY_DIR if exist "%USERPROFILE%\Desktop\Gay Proxy" set "GAYPROXY_DIR=%USERPROFILE%\Desktop\Gay Proxy"
+if exist "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" (
+    start "Gay Proxy" /d "!GAYPROXY_DIR!" "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" --port 21000
+) else if exist "!GAYPROXY_DIR!\run_proxy.bat" (
+    start "Gay Proxy" /d "!GAYPROXY_DIR!" cmd /k "!GAYPROXY_DIR!\run_proxy.bat"
+) else (
+    echo [X] Gay Proxy directory not found at !GAYPROXY_DIR!.
+)
+echo [OK] Gay Proxy launched in a dedicated window!
+ping 127.0.0.1 -n 2 > nul
+goto menu
+
+:: ========================================================================
+:: [R] Reset Windows System Proxy
+:: ========================================================================
+:reset_win_proxy
+echo.
+echo ==============================================================================
+echo   [Reset Proxy] Restoring Windows System Proxy ^& Flushing WinINet Cache
+echo ==============================================================================
+set "GAYPROXY_DIR="
+if exist "%~dp0..\Gay Proxy" set "GAYPROXY_DIR=%~dp0..\Gay Proxy"
+if not defined GAYPROXY_DIR if exist "%USERPROFILE%\Desktop\Gay Proxy" set "GAYPROXY_DIR=%USERPROFILE%\Desktop\Gay Proxy"
+if exist "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" (
+    "!GAYPROXY_DIR!\bin\Publish\GayProxy.exe" --clean
+) else (
+    powershell -NoProfile -Command "Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name ProxyEnable -Value 0; Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -Name ProxyServer -ErrorAction SilentlyContinue"
+)
+echo.
+echo [OK] System proxy safely disabled and flushed!
+pause
 goto menu
 
 :: ========================================================================
@@ -263,7 +334,7 @@ echo.
 if !errorlevel! equ 0 (
     echo.
     echo [OK] Successfully dumped protobuf definitions to: %DUMP_OUT%
-    echo [*] Updating packetIds.json into Hoyo-hkrpg-PS repo...
+    echo [*] Updating packetIds.json into GaC-hkrpg-ps repo...
     if exist "%DUMP_OUT%\packetIds.json" (
         copy /y "%DUMP_OUT%\packetIds.json" "%~dp0data\packetIds.json" >nul 2>&1
         echo [OK] Synced data\packetIds.json!

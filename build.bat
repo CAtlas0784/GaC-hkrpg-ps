@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0"
 echo ==============================================
-echo   Building Hoyo-hkrpg-PS (Release Mode)
+echo   Building GaC hkrpg ps (Release Mode)
 echo ==============================================
 
 cargo build --release

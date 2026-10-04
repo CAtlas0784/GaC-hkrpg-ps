@@ -539,5 +539,17 @@ pub async fn create_battle_info(
         });
     }
 
+    // บัฟติดตัว Aha Global Passive (ID: 151104)
+    // หมายเหตุ: ฟิลด์ mhlcfdegogn (Tag 42) อยู่ใน BattleStatistics (ฝั่ง client รายงานสถิติตอนจบสู้)
+    // ไม่ใช่ SceneBattleInfo — Global Passive จึงต้องใส่ผ่าน buff_list เหมือน Castorice/SW
+    battle_info.buff_list.push(BattleBuff {
+        id: 151104,
+        level: 1,
+        owner_id: u32::MAX,
+        wave_flag: 0xffffffff,
+        target_index_list: Vec::with_capacity(0),
+        dynamic_values: HashMap::with_capacity(0),
+    });
+
     battle_info
 }

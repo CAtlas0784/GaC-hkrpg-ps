@@ -34,6 +34,8 @@ pub struct PlayerSession {
     pub shutdown_rx: watch::Receiver<()>,
     pub json_data: OnceLock<FreesrData>,
     pub next_scene_save: u64,
+    /// entity_id -> (prop_id, inst_id, prop_state) ของ props ที่โหลดในฉากปัจจุบัน
+    pub prop_entities: std::collections::HashMap<u32, (u32, u32, u32)>,
 }
 
 impl PlayerSession {
@@ -52,6 +54,7 @@ impl PlayerSession {
             shutdown_rx,
             shutdown_tx,
             next_scene_save: 0,
+            prop_entities: std::collections::HashMap::new(),
         }
     }
 
@@ -149,7 +152,14 @@ impl PlayerSession {
                     .avatars
                     .values()
                     .map(|avatar| {
-                        avatar.to_avatar_path_data_proto(Option::None, Vec::with_capacity(0))
+                        avatar.to_avatar_path_data_proto(
+                            Option::None,
+                            Vec::with_capacity(0),
+                            json.dressed_skins
+                                .get(&avatar.avatar_id)
+                                .copied()
+                                .unwrap_or(0),
+                        )
                     })
                     .collect::<Vec<_>>(),
             }),
@@ -193,6 +203,10 @@ impl PlayerSession {
                                 .iter()
                                 .filter(|r| r.equip_avatar == avatar.avatar_id)
                                 .collect(),
+                            json.dressed_skins
+                                .get(&avatar.avatar_id)
+                                .copied()
+                                .unwrap_or(0),
                         )
                     })
                     .collect::<Vec<_>>(),

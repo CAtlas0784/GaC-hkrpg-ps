@@ -7,9 +7,26 @@ pub async fn on_get_basic_info_cs_req(
     _body: &GetBasicInfoCsReq,
     res: &mut GetBasicInfoScRsp,
 ) {
-    res.player_setting_info = Some(PlayerSettingInfo::default());
+    res.retcode = 0;
     res.gender = Gender::Woman as u32;
     res.is_gender_set = true;
+    res.player_setting_info = Some(PlayerSettingInfo {
+        ojpaodihaje: Some(Pnolliakgdb {
+            belkcbagmfc: false,
+            jhjkcjkdhib: 0,
+            mlpgdpgifcj: false,
+        }),
+        // optional message fields ที่ client 4.6.51 อ่านต่อ — ปล่อย None จะ NRE ที่ _CmdGetBasicInfoScRsp
+        ankidjjinei: Some(Ljfjogeegpj {
+            mbiaimkhndb: false,
+        }),
+        cmfcooeeecb: Some(Jpgackplgcd {
+            kalacjbapoa: false,
+            fokjipgmkan: false,
+            iblgocfboco: false,
+        }),
+        ..Default::default()
+    });
 }
 
 pub async fn on_player_heart_beat_cs_req(
@@ -78,6 +95,36 @@ pub async fn on_player_login_finish_cs_req(
         .await?;
 
     Ok(())
+}
+
+pub async fn on_get_tutorial_cs_req(
+    _session: &mut PlayerSession,
+    _req: &GetTutorialCsReq,
+    res: &mut GetTutorialScRsp,
+) {
+    // mark ทุก tutorial ว่าดูแล้ว — กันหน้าต่างสอนเล่นเด้งขึ้นมาเอง (และไม่บล็อก input)
+    res.retcode = 0;
+    res.tutorial_list = (1..=1000)
+        .map(|id| Tutorial {
+            id,
+            status: Hhjgmfealeb::Oekdmamgidc.into(),
+        })
+        .collect();
+}
+
+pub async fn on_get_tutorial_guide_cs_req(
+    _session: &mut PlayerSession,
+    _req: &GetTutorialGuideCsReq,
+    res: &mut GetTutorialGuideScRsp,
+) {
+    res.retcode = 0;
+    res.tutorial_guide_list = (1..=1000)
+        .map(|id| TutorialGuide {
+            id,
+            status: Hhjgmfealeb::Oekdmamgidc.into(),
+            r#type: 0,
+        })
+        .collect();
 }
 
 pub async fn on_sync_client_res_version_cs_req(
