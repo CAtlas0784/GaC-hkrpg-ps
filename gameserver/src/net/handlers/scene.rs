@@ -33,7 +33,7 @@ pub async fn on_get_cur_scene_info_cs_req(
 
     // If player logged out or got stuck inside a challenge arena, recover back to Parlor Car
     let entry_id = if player.scene.entry_id >= 3000000 && player.scene.entry_id < 4000000 {
-        1000101
+        100000104
     } else {
         player.scene.entry_id
     };
@@ -41,13 +41,14 @@ pub async fn on_get_cur_scene_info_cs_req(
     let default_scene = SceneInfo {
         game_mode_type: 1,
         entry_id,
-        plane_id: if entry_id == 1000101 { 10001 } else { player.scene.plane_id },
-        floor_id: if entry_id == 1000101 { 10001001 } else { player.scene.floor_id },
+        plane_id: if entry_id == 100000104 { 10000 } else { player.scene.plane_id },
+        floor_id: if entry_id == 100000104 { 10000000 } else { player.scene.floor_id },
         ..Default::default()
     };
 
     let scene = load_scene(session, default_scene.entry_id, false, Option::<u32>::None, None).await;
 
+    res.retcode = 0;
     res.scene = if let Ok(scene) = scene {
         Some(scene)
     } else {

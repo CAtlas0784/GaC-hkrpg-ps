@@ -202,35 +202,28 @@ pub async fn on_get_challenge_cs_req(
     res.challenge_list = get_challenge_list();
 
     let mut max_levels = Vec::new();
+    let mut add_max_level = |level: u32, r_type: u32| {
+        for unlocked in [true, false] {
+            max_levels.push(ChallengeHistoryMaxLevel {
+                level,
+                hnhcfjjnjce: unlocked,
+                reward_display_type: r_type,
+            });
+        }
+    };
 
-    // Map max_level for every stage (matches himeko-nova-sr logic)
-    for id in get_challenge_stages_list() {
-        let (level, r_type) = if id >= 30000 {
-            (4, 101913) // Apocalyptic Shadow Tierce
-        } else if id >= 20000 {
-            (4, 101404) // Pure Fiction
-        } else {
-            (12, 101212) // MoC 12 floors
-        };
+    add_max_level(15, 1); // Jarilo
+    add_max_level(6, 2);  // Luofu
+    add_max_level(12, 3); // MoC 12 floors
+    add_max_level(4, 4);  // Pure Fiction 4 stages
+    add_max_level(4, 5);  // Apocalyptic Shadow 4 difficulties
+    add_max_level(6, 6);  // Anomaly Arbitration
 
-        max_levels.push(ChallengeHistoryMaxLevel {
-            level,
-            hnhcfjjnjce: false,
-            reward_display_type: r_type,
-        });
-    }
-
-    // Include max level entries for Forgotten Hall story groups (Jarilo-VI 15, Luofu 6)
-    max_levels.push(ChallengeHistoryMaxLevel {
-        level: 15,
-        hnhcfjjnjce: false,
-        reward_display_type: 101015,
-    });
-    max_levels.push(ChallengeHistoryMaxLevel {
-        level: 6,
-        hnhcfjjnjce: false,
-        reward_display_type: 101021,
-    });
+    for r in 101001..=101015 { add_max_level(15, r); }
+    for r in 101016..=101021 { add_max_level(6, r); }
+    for r in 101201..=101212 { add_max_level(12, r); } // MoC Floors 1..12
+    for r in 101401..=101404 { add_max_level(4, r); }  // Pure Fiction
+    for r in [101713, 101913, 102113] { add_max_level(4, r); } // Apocalyptic Shadow
 
     res.max_level_list = max_levels;
 }
@@ -320,9 +313,6 @@ pub async fn on_get_cur_challenge_peak_cs_req(
     res: &mut GetCurChallengePeakScRsp,
 ) {
     res.retcode = 0;
-    res.has_passed = true;
-    res.peak_id = 1;
-    res.boss_buff_id = 0;
 }
 
 /// Starward Mode — เริ่มแชลเลนจ์ peak (cmd 8948)

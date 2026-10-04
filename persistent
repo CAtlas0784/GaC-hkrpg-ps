@@ -6,15 +6,15 @@
     "3": 1506
   },
   "position": {
-    "x": 0,
+    "x": -4030,
     "y": 0,
-    "z": 0,
-    "rot_y": 0
+    "z": -13006,
+    "rot_y": 270000
   },
   "scene": {
-    "plane_id": 10001,
-    "floor_id": 10001001,
-    "entry_id": 1000101
+    "plane_id": 10000,
+    "floor_id": 10000000,
+    "entry_id": 100000104
   },
   "main_character": "FemaleHarmony",
   "march_type": "MarchHunt",

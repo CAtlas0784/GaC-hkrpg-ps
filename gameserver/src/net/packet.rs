@@ -225,17 +225,12 @@ macro_rules! trait_handler {
                             body.extend_from_slice(&cbs);
                         }
 
-                        // 4.6.51: 1708, legacy: 1736
+                        // 4.6.51: 1708 (GetChallengeGroupStatisticsScRsp)
                         session.send_raw(NetPacket {
                             cmd_type: 1708,
                             head: Vec::new(),
-                            body: body.clone(),
-                        }).await?;
-                        let _ = session.send_raw(NetPacket {
-                            cmd_type: 1736,
-                            head: Vec::new(),
                             body,
-                        }).await;
+                        }).await?;
                         Ok(())
                     }
                     8995 | 8979 | 8981 => {
@@ -349,17 +344,12 @@ macro_rules! trait_handler {
                         challenge::handle_leave_challenge_tierce(session).await
                     }
                     8993 | 8991 => {
-                        // 4.6.51: 8981, 4.5.52: 8982 (tag 14 retcode = 0)
+                        // 4.6.51: 8981 (tag 14 retcode = 0)
                         session.send_raw(NetPacket {
                             cmd_type: 8981,
                             head: Vec::new(),
                             body: vec![0x70, 0x00],
                         }).await?;
-                        let _ = session.send_raw(NetPacket {
-                            cmd_type: 8982,
-                            head: Vec::new(),
-                            body: vec![0x70, 0x00],
-                        }).await;
                         Ok(())
                     }
                     8987 => {
