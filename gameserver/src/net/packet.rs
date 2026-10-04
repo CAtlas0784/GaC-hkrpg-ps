@@ -122,10 +122,6 @@ macro_rules! trait_handler {
                     session.send_dummy_response(cmd_id).await?;
                     return Ok(());
                 }
-                if PlayerSession::should_send_dummy_rsp(cmd_id) {
-                    session.send_dummy_response(cmd_id).await?;
-                    return Ok(());
-                }
 
                 match cmd_id {
                     $(

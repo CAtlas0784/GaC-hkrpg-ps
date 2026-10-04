@@ -102,14 +102,7 @@ pub async fn on_get_tutorial_cs_req(
     _req: &GetTutorialCsReq,
     res: &mut GetTutorialScRsp,
 ) {
-    // mark ทุก tutorial ว่าดูแล้ว — กันหน้าต่างสอนเล่นเด้งขึ้นมาเอง (และไม่บล็อก input)
     res.retcode = 0;
-    res.tutorial_list = (1..=1000)
-        .map(|id| Tutorial {
-            id,
-            status: Hhjgmfealeb::Oekdmamgidc.into(),
-        })
-        .collect();
 }
 
 pub async fn on_get_tutorial_guide_cs_req(
@@ -118,13 +111,6 @@ pub async fn on_get_tutorial_guide_cs_req(
     res: &mut GetTutorialGuideScRsp,
 ) {
     res.retcode = 0;
-    res.tutorial_guide_list = (1..=1000)
-        .map(|id| TutorialGuide {
-            id,
-            status: Hhjgmfealeb::Oekdmamgidc.into(),
-            r#type: 0,
-        })
-        .collect();
 }
 
 pub async fn on_sync_client_res_version_cs_req(

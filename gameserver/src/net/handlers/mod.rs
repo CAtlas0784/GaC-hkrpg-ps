@@ -95,7 +95,7 @@ dummy! {
     // GetRogueInfo, // ?3.7.51
     GetExpeditionData,
     // GetRogueDialogueEventData,
-    GetJukeboxData,
+    // GetJukeboxData,
     // DailyFirstMeetPam, // ?3.7.51
     // GetMuseumInfo, // ?3.7.51
     GetLoginActivity,
