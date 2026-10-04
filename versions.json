@@ -161,6 +161,12 @@
     "lua_url": "https://autopatchcn.bhsr.com/lua/BetaLive/output_16317476_035e0a79224b_ed91499b6ef70b",
     "ifix_url": "https://autopatchcn.bhsr.com/ifix/BetaLive/output_0_40d2ce0253_c61ba99f70b885"
   },
+  "CNBETAWin4.6.51": {
+    "asset_bundle_url": "https://autopatchcn.bhsr.com/asb/BetaLive/output_16677734_6b334c11ab3a_653e489328e98e",
+    "ex_resource_url": "https://autopatchcn.bhsr.com/design_data/BetaLive/output_16706787_90982cd003eb_5ed57e0de4e2b4",
+    "lua_url": "https://autopatchcn.bhsr.com/lua/BetaLive/output_16679499_5abbd35a74c5_a28e83e88b78d5",
+    "ifix_url": "https://autopatchcn.bhsr.com/ifix/BetaLive/output_0_40d2ce0253_c61ba99f70b885"
+  },
   "OSBETAWin4.6.51": {
     "asset_bundle_url": "https://autopatchcn.bhsr.com/asb/BetaLive/output_16685262_bd0485299f5b_858f2db22344cc",
     "asset_bundle_url_b": "https://autopatchcn.bhsr.com/asb/BetaLive/output_16677734_6b334c11ab3a_653e489328e98e",
