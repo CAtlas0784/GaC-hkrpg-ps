@@ -1,13 +1,53 @@
 use anyhow::Result;
 
+use std::io::Write;
+use std::sync::Mutex;
+
+struct DualWriter {
+    file: Mutex<std::fs::File>,
+}
+
+impl Write for DualWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let _ = std::io::stdout().write_all(buf);
+        if let Ok(mut f) = self.file.lock() {
+            let _ = f.write_all(buf);
+            let _ = f.flush();
+        }
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        let _ = std::io::stdout().flush();
+        if let Ok(mut f) = self.file.lock() {
+            let _ = f.flush();
+        }
+        Ok(())
+    }
+}
+
 pub fn init_tracing() {
     #[cfg(target_os = "windows")]
     let _ = ansi_term::enable_ansi_support();
 
-    let _ = env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"))
-        .target(env_logger::Target::Stdout)
-        .format_timestamp_secs()
-        .try_init();
+    if let Ok(file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("gameserver.log")
+    {
+        let writer = DualWriter {
+            file: Mutex::new(file),
+        };
+        let _ = env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"))
+            .target(env_logger::Target::Pipe(Box::new(writer)))
+            .format_timestamp_secs()
+            .try_init();
+    } else {
+        let _ = env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"))
+            .target(env_logger::Target::Stdout)
+            .format_timestamp_secs()
+            .try_init();
+    }
 }
 
 #[tokio::main]

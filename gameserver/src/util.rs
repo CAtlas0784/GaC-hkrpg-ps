@@ -13,3 +13,15 @@ pub fn cur_timestamp_secs() -> u64 {
         .unwrap()
         .as_secs()
 }
+
+pub fn packet_log(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("gameserver.log")
+    {
+        let ts = cur_timestamp_ms();
+        let _ = writeln!(f, "[{ts}] {msg}");
+    }
+}

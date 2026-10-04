@@ -92,6 +92,7 @@ impl PlayerSession {
     pub async fn send(&self, body: impl Message + CmdID) -> Result<()> {
         let mut buf = Vec::new();
         body.encode(&mut buf)?;
+        crate::util::packet_log(&format!("[PACKET SEND] cmd_id: {} (len: {})", body.get_cmd_id(), buf.len()));
         tracing::info!("sent packet with CmdID: {}", body.get_cmd_id());
 
         let payload: Vec<u8> = NetPacket {
@@ -110,6 +111,8 @@ impl PlayerSession {
     }
 
     pub async fn send_raw(&self, payload: NetPacket) -> Result<()> {
+        crate::util::packet_log(&format!("[PACKET SEND RAW] cmd_id: {} (len: {})", payload.cmd_type, payload.body.len()));
+        tracing::info!("sent raw packet with CmdID: {}", payload.cmd_type);
         let mut kcp = self.kcp.lock().await;
         let payload: Vec<u8> = payload.into();
         kcp.send(&payload)?;

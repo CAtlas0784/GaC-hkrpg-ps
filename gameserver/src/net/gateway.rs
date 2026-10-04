@@ -77,6 +77,7 @@ impl Gateway {
     async fn establish_kcp_session(&mut self, data: u32, addr: SocketAddr) -> Result<()> {
         let (conv_id, session_token) = self.next_conv_pair();
         tracing::info!("New connection from addr: {addr} with conv_id: {conv_id}");
+        crate::util::packet_log(&format!("[KCP] New connection from {addr} (conv_id: {conv_id}, token: {session_token})"));
 
         let session = Arc::new(RwLock::new(PlayerSession::new(
             self.socket.clone(),
@@ -86,10 +87,15 @@ impl Gateway {
         )));
 
         // Init the json to session
-        if let Ok(data) = FreesrData::load().await {
-            let _ = session.write().await.json_data.set(data);
-        } else {
-            tracing::error!("Failed to load initial freesr-data.json");
+        match FreesrData::load().await {
+            Ok(data) => {
+                let _ = session.write().await.json_data.set(data);
+                crate::util::packet_log("[KCP] FreesrData loaded successfully");
+            }
+            Err(e) => {
+                crate::util::packet_log(&format!("[ERROR] Failed to load initial freesr-data.json: {e}"));
+                tracing::error!("Failed to load initial freesr-data.json: {e}");
+            }
         }
 
         let session_ref = session.clone();
@@ -215,6 +221,7 @@ impl Gateway {
 
         tokio::spawn(async move {
             if let Err(err) = Box::pin(session.write().await.consume(&data)).await {
+                crate::util::packet_log(&format!("[ERROR] Session consume error ({addr}): {err}"));
                 tracing::error!("An error occurred while processing session ({addr}): {err}");
             }
         });

@@ -22,8 +22,8 @@ if not defined CHOICE (
 if not defined CHOICE set "CHOICE=1"
 
 :: 1. Ensure Binaries Exist
-if not exist "sdkserver.exe" if exist "target\release\sdkserver.exe" copy /y "target\release\sdkserver.exe" "sdkserver.exe" >nul
-if not exist "gameserver.exe" if exist "target\release\gameserver.exe" copy /y "target\release\gameserver.exe" "gameserver.exe" >nul
+if exist "target\release\sdkserver.exe" copy /y "target\release\sdkserver.exe" "sdkserver.exe" >nul
+if exist "target\release\gameserver.exe" copy /y "target\release\gameserver.exe" "gameserver.exe" >nul
 
 if not exist "sdkserver.exe" (
     echo [X] sdkserver.exe not found! Please compile or run build.bat first.

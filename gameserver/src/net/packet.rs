@@ -117,6 +117,7 @@ macro_rules! trait_handler {
 
             async fn on_message(session: &mut PlayerSession, cmd_id: u16, payload: Vec<u8>) -> Result<()> {
                 use ::prost::Message;
+                crate::util::packet_log(&format!("[PACKET RECV] cmd_id: {cmd_id} (len: {})", payload.len()));
                 tracing::info!("[PACKET] Received cmd_id: {cmd_id}");
                 if PlayerSession::should_send_dummy_rsp(cmd_id) {
                     session.send_dummy_response(cmd_id).await?;
@@ -126,11 +127,20 @@ macro_rules! trait_handler {
                 match cmd_id {
                     $(
                         cmd_id if cmd_id == paste! { <proto::[<$name CsReq>] as proto::CmdID>::CMD_ID } => {
-                            let body = paste! { proto::[<$name CsReq>]::decode(&mut &payload[..])? };
-                            paste! {
-                                Self::[<on_$name:snake _cs_req>](session, &body)
-                                    .instrument(tracing::info_span!(stringify!([<on_$name:snake>]), cmd_id = cmd_id))
-                                    .await
+                            match paste! { proto::[<$name CsReq>]::decode(&mut &payload[..]) } {
+                                Ok(body) => {
+                                    paste! {
+                                        Self::[<on_$name:snake _cs_req>](session, &body)
+                                            .instrument(tracing::info_span!(stringify!([<on_$name:snake>]), cmd_id = cmd_id))
+                                            .await
+                                    }
+                                }
+                                Err(e) => {
+                                    let req_name = stringify!($name);
+                                    crate::util::packet_log(&format!("[ERROR] Failed to decode cmd_id {cmd_id} ({req_name}): {e}"));
+                                    tracing::error!("Failed to decode cmd_id {cmd_id} ({req_name}): {e}");
+                                    Ok(())
+                                }
                             }
                         }
                     )*

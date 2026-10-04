@@ -71,8 +71,9 @@ beta_text()
 pub async fn on_player_login_finish_cs_req(
     session: &mut PlayerSession,
     _req: &PlayerLoginFinishCsReq,
-    _res: &mut PlayerLoginFinishScRsp,
+    res: &mut PlayerLoginFinishScRsp,
 ) -> Result<()> {
+    res.retcode = 0;
     session
         .send(ContentPackageSyncDataScNotify {
             data: Some(ContentPackageData {

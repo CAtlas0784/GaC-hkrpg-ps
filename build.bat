@@ -12,12 +12,15 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
+copy /y "target\release\gameserver.exe" "gameserver.exe" >nul
+copy /y "target\release\sdkserver.exe" "sdkserver.exe" >nul
+
 echo.
 echo ==============================================
 echo [SUCCESS] Build completed!
-echo Executables built at:
-echo   - target\release\gameserver.exe
-echo   - target\release\sdkserver.exe
+echo Executables deployed to root:
+echo   - gameserver.exe
+echo   - sdkserver.exe
 echo.
 echo You can launch them anytime with 'run.bat'.
 echo ==============================================
