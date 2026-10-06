@@ -1,6 +1,6 @@
 # GaC hkrpg rust
 
-A native, high-performance Rust private server implementation for Honkai: Star Rail (Supported Versions: **4.4.5x - 4.5.52+**).
+A native, high-performance Rust private server implementation for Honkai: Star Rail (Supported Versions: **######**).
 
 ---
 
@@ -11,7 +11,7 @@ This repository is forked and actively contributed/developed upon:
 - Built upon the foundation of **RobinSR & JadeSR** by [reversedrooms](https://git.xeondev.com/reversedrooms):
   - [RobinSR Repository](https://git.xeondev.com/reversedrooms/RobinSR)
 
-### 🚀 Major Enhancements & New Features
+### 🚀 Major Enhancements & New Features (WIP slop packet)
 - **Full Endgame Challenge Protocol Overhaul**:
   - **Forgotten Hall**: Complete story stages (Jarilo-VI 15 floors & Luofu 6 floors) with full 3-star bitmasks.
   - **Memory of Chaos (MoC)**: All floors (1–12) unlocked with 36/36 ⭐, 20-cycle records, and active season stages (GroupID 1035).
@@ -22,7 +22,7 @@ This repository is forked and actively contributed/developed upon:
   - Clicking **Start Challenge** on the lineup UI smoothly loads the arena scene (`load_challenge_scene`) with monsters, props, and custom player placement.
   - Automatically transfers your chosen lineup from the UI into the turn-based combat system (`battle_config.custom_battle_lineup`).
   - Precomputed `challenge_data.json` containing 783 standard stages + 7 Tierce stages and 1,509 wave configs with exact monster IDs and levels.
-- **Protocol & Network Fixes for v4.5.52 Client**:
+- **Protocol & Network Fixes for ##########
   - Replaced naive byte slicing with full protobuf varint decoding for Challenge Group IDs (`GetChallengeGroupStatisticsCsReq` CmdID 1711).
   - Corrected `retcode` tags across Challenge responses (`GetCurChallengeScRsp` Tag 13, `GetChallengeTierceDataScRsp` Tag 12, `GetChallengeTierceControllerScRsp` Tag 7).
   - Implemented response handlers for Clearance Lineup (`2966`/`2916`/`2919`) and Lineup Avatar data (`740`).
