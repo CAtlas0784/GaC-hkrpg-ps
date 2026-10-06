@@ -10,6 +10,7 @@ mod mail;
 mod mission;
 mod player;
 mod scene;
+mod tutorial;
 
 use anyhow::Result;
 use paste::paste;
@@ -30,6 +31,7 @@ pub use mail::*;
 pub use mission::*;
 pub use player::*;
 pub use scene::*;
+pub use tutorial::*;
 
 macro_rules! dummy {
     ($($cmd:ident),* $(,)*) => {
