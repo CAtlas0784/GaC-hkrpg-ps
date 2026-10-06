@@ -38,7 +38,7 @@
 | `tools.bat` | เพิ่ม GAME_DIR `%USERPROFILE%\Desktop\StarRail_4.6.51_OS` เป็นลำดับแรก, เปลี่ยนชื่อโปรเจกต์ |
 | `SKILL.md` | คู่มือบทเรียนทั้งหมด (อัปเดตแล้ว: full coverage อันตราย, 1511 ห้ามใส่) |
 
-**ไบนารี**: `gameserver.exe` 2,898,432 bytes (build ล่าสุด — ยังไม่ได้ทดสอบโดย user หลัง revert challenge_data)
+**ไบนารี**: `gameserver.exe` 3,023,872 bytes (build รวมงานทั้งสองฝั่ง — รอ user ทดสอบ: tutorial flow + mission status ใหม่)
 
 ## 3. ไทม์ไลน์อาการ (สำคัญมาก — อ่านก่อนเดา)
 
@@ -91,3 +91,64 @@
 - `field_overrides_4651.json` — **ดัชนีแปลชื่อ field obfuscated → ชื่อจริงทุก message** (ล้ำค่าสุด)
 - `bin/stages.json` (2.2MB), `bin/teleports.json` (712KB), `bin/res.json` (13MB), `bin/challenge_data.json` (มี peak)
 - PS อ้างอิงที่เวิร์ก: Firefly Shelter (firefly-go) — client เข้าได้แน่นอน
+
+---
+
+## 8. BASELINE: ฟีเจอร์ทั้งหมดที่อยู่ใน build สุดท้ายที่ "เข้าถึง Pom-Pom ได้"
+
+(ใช้เป็นจุดอ้างอิง — ถ้า build ใหม่จอดำ ให้เทียบว่าอะไรเพิ่มมาหลังจาก list นี้)
+
+1. จอดำ fix — GetBasicInfo: PlayerSettingInfo (ojpaodihaje Tag 13) + ankidjjinei (Tag 1171) + cmfcooeeecb (Tag 1552)
+2. Mission main/sub swap fix
+3. ระบบจัดทีมครบ — ReplaceLineup fix + SwapLineup + SwitchLineupIndex + GetLineupAvatarData
+4. ระบบ skin — dressed_skins (persistent) + skinIds 8 ตัวใน res.json + GetAvatarData แนบ skin
+5. บัฟ Aha 151104 ใน battle
+6. InteractProp — prop mapping (entity→prop) + ตอบ state จริง + server_debug.log
+7. GetNpcTakenReward (cmd 2174) — แก้ dialogue NPC ค้าง
+8. StartChallenge 4.6 — decoder (challenge_id tag 14) + ตอบ cmd 1787 layout ใหม่ + ทีม cap 4
+9. Dummy systems ~90 cmd — Pet/Fate/PlanetFes/Racing/Assist
+10. res.json 13MB ใหม่ (จาก AstralOS dump — ฉากรถไฟตรงกันเป๊ะ) + skinIds
+11. versions.json — ex_resource_url ชี้ design_data/output_16700702 (ตรง client)
+12. Starward UI data — GetChallengePeakData/GetCurChallengePeak (ตอบได้)
+13. run.bat/tools.bat — auto-find game dir + path 4.6.51
+
+## 9. สิ่งที่เพิ่มหลัง baseline (ตัวปัญหาจอดำอยู่ในช่วงนี้ — ไล่ทีละอย่าง)
+
+| # | สิ่งที่เพิ่ม | สถานะ |
+|---|---|---|
+| 1 | full coverage ตอบ ScRsp ว่างทุก cmd | **พิสูจน์แล้วว่าเป็นตัวการ** (GridFight/ChessRogue/EvolveBuild/ChimeraDuel/Jukebox Sync(nil) NRE) — ถอนแล้ว |
+| 2 | challenge_data.json ใหม่ 843 challenges + peak | สงสัย — ย้อนกลับแล้ว (ตัวเก่า 819 ตัวแสดง Endgame UI ได้) |
+| 3 | BASE_AVATAR_IDS + 1511 | สงสัย — ถอนแล้ว (client beta แรกไม่มี config 1511) |
+| 4 | teleports.json + TELEPORT_DB fallback | น่าจะไม่ใช่ (ไม่ trigger ตอน login) — ยังไม่ทดสอบแยก |
+| 5 | GetChallengeScRsp คะแนน tierce 5xxx = 4000 | ยังไม่ทดสอบแยก |
+
+---
+
+## 10. ข้อมูลใหม่ล่าสุด (session ทดสอบ 14:3x — หลัง 6 ข้อของ Gemini)
+
+### อาการที่เห็นจากวิดีโอ (E:\Rec\...\2026.10.06 - 14.37.12.01.mp4)
+1. **เข้าฉากได้ปกติ** — Parlor Car โหลด, ตัวละคร render, "Enter" prompt โชว์
+2. **HUD ขวาบนหาย** — ไม่มีปุ่ม menu/phone/map (เทียบฉากปกติ) — client UI module ไม่ init
+3. **กดสกิลแล้วกล้องหลุดจากตัว** — ทีมคือตัวใหม่ 4.x (1501/1502/1503/1506 = Sparxie/Yao Guang/Pearl/...) — client beta build แรกไม่มี config ตัวพวกนี้
+4. แผนที่ Amphoreus เปิดได้แต่เสาโชว์ "Teleport function not yet available"
+5. คุย Pom-Pom (npc 3012) → เลือกเข้า Endgame → **ค้างที่ dialog** (client รอ response ต่อ)
+
+### ไฟล์โดนแทนที่ (โดย Gemini/user)
+- `freesr-data.json` ถูกแทนด้วย format ใหม่ (99 avatars รวม 1511/1512/1513/8001-8010, ไม่มี leader/lineups keys) — FreesrData ยัง parse ได้ (serde skip) แต่ต้องตรวจว่าข้อมูลอื่นครบ
+- `persistent.lineups` = 1501/1502/1503/1506 (ทีมตัวใหม่) — **เปลี่ยนเป็น 1001/1002/1003/1004 (ตัวเก่า) เพื่อทดสอบ bisect แล้ว**
+- `gameserver.log` (DualWriter) ถูกเพิ่ม — log ครบทุก cmd
+
+### สถิติจาก gameserver.log (session จอดำ)
+- `cmd 1204 GetMissionStatus` ถูกส่ง **194 ครั้ง** — client วนถาม = response ไม่พอใจ (เราส่ง finished_main 23 ตัวจาก res.json — อาจต้องส่ง curversion (tag 13) ด้วย — เพิ่มแล้ว)
+- `Unknown command ID` **942 ครั้ง** — session นั้นใช้ build ไม่มี full coverage (โดนย้อน) — build ล่าสุดแก้แล้ว
+- `cmd 8115 GetSwitchHandData` ไม่เคยถูกตอบ — **เพิ่ม handler ตอบ 8104 retcode 0 แล้ว**
+
+### server_debug.log หลักฐาน flow (session ล่าสุด)
+- `INTERACT_PROP entity 1009/1001/1004 → prop 100083 interact 1100` (จุดเข้า Endgame บนรถไฟ)
+- `GET_MAIN_MISSION_CUSTOM_VALUE ids=178/45/128/2/36/7/3` — handler ใหม่ตอบ MainMission list แล้ว
+- `GET_NPC_TAKEN_REWARD npc_id=3012` (Pom-Pom) — คุยแล้วเลือกเข้า Endgame → ค้าง
+
+### สิ่งที่ต้องทดสอบต่อ (เรียงลำดับ)
+1. **ทีมตัวเก่า (1001-1004)** — ทดสอบว่าเดิน/สกิล/menu ได้ไหมกับตัวที่ client มี config → ถ้าได้ = ยืนยันว่าตัว 4.x ใหม่ไม่มี config ใน client build นี้ → ตัดจาก BASE_AVATAR_IDS
+2. **จอดำหลัง login** — หลังใช้ทีมเก่า ถ้ายังจอดำ → ย้อน res.json เป็น git HEAD เทียบ
+3. **HUD ขวาบน** — ตรวจ GetPlayerBoardData/GetMissionData responses (ตอบว่างอยู่ — client HUD อาจต้องการข้อมูลจริง)

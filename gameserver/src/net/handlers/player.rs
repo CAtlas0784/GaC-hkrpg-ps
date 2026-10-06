@@ -103,7 +103,14 @@ pub async fn on_get_tutorial_cs_req(
     _req: &GetTutorialCsReq,
     res: &mut GetTutorialScRsp,
 ) {
+    // mark ทุก tutorial ว่าดูแล้ว — กันหน้าต่างสอนเล่นเด้งขึ้นมาเอง (และไม่บล็อก input)
     res.retcode = 0;
+    res.tutorial_list = (1..=1000)
+        .map(|id| Tutorial {
+            id,
+            status: Hhjgmfealeb::Oekdmamgidc.into(),
+        })
+        .collect();
 }
 
 pub async fn on_get_tutorial_guide_cs_req(
@@ -112,6 +119,73 @@ pub async fn on_get_tutorial_guide_cs_req(
     res: &mut GetTutorialGuideScRsp,
 ) {
     res.retcode = 0;
+    res.tutorial_guide_list = (1..=1000)
+        .map(|id| TutorialGuide {
+            id,
+            status: Hhjgmfealeb::Oekdmamgidc.into(),
+            r#type: 0,
+        })
+        .collect();
+}
+
+// ตอบกลับพร้อม Tutorial message สถานะ finished — client จะปลด input หลังปิดหน้าต่างสอนเล่น
+pub async fn on_finish_tutorial_cs_req(
+    _session: &mut PlayerSession,
+    req: &FinishTutorialCsReq,
+    res: &mut FinishTutorialScRsp,
+) {
+    crate::net::handlers::scene_debug_log(&format!(
+        "FINISH_TUTORIAL id={} type={}", req.hpimdinccnn, req.hfiblhafonm
+    ));
+    res.retcode = 0;
+    res.tutorial = Some(Tutorial {
+        id: req.hpimdinccnn,
+        status: Hhjgmfealeb::Oekdmamgidc.into(),
+    });
+}
+
+pub async fn on_finish_tutorial_guide_cs_req(
+    _session: &mut PlayerSession,
+    req: &FinishTutorialGuideCsReq,
+    res: &mut FinishTutorialGuideScRsp,
+) {
+    crate::net::handlers::scene_debug_log(&format!(
+        "FINISH_TUTORIAL_GUIDE type={} group_id={}", req.r#type, req.group_id
+    ));
+    res.retcode = 0;
+    res.tutorial_guide = Some(TutorialGuide {
+        id: req.group_id,
+        status: Hhjgmfealeb::Oekdmamgidc.into(),
+        r#type: req.r#type,
+    });
+}
+
+pub async fn on_unlock_tutorial_cs_req(
+    _session: &mut PlayerSession,
+    req: &UnlockTutorialCsReq,
+    res: &mut UnlockTutorialScRsp,
+) {
+    crate::net::handlers::scene_debug_log(&format!(
+        "UNLOCK_TUTORIAL id={}", req.hpimdinccnn
+    ));
+    res.retcode = 0;
+    res.tutorial = Some(Tutorial {
+        id: req.hpimdinccnn,
+        status: Hhjgmfealeb::Oekdmamgidc.into(),
+    });
+}
+
+pub async fn on_unlock_tutorial_guide_cs_req(
+    _session: &mut PlayerSession,
+    req: &UnlockTutorialGuideCsReq,
+    res: &mut UnlockTutorialGuideScRsp,
+) {
+    res.retcode = 0;
+    res.tutorial_guide = Some(TutorialGuide {
+        id: req.group_id,
+        status: Hhjgmfealeb::Oekdmamgidc.into(),
+        r#type: req.r#type,
+    });
 }
 
 pub async fn on_sync_client_res_version_cs_req(

@@ -1,8 +1,6 @@
 use super::*;
 use common::resources::GAME_RES;
 // หากมีการอัพเดท ของตัวละครใหม่ ๆ ให้เพิ่ม ID ของตัวละครเหล่านั้นใน BASE_AVATAR_IDS
-// หมายเหตุ: ห้ามใส่ avatar ที่ client build นี้ไม่มี (เช่น 1511 ของ beta รุ่นหลัง)
-// — client จะไม่มี config ของตัวนั้นและพังตอน init โลก (จอดำหลัง login)
 pub const BASE_AVATAR_IDS: [u32; 89] = [
     8001, 1001, //
     //

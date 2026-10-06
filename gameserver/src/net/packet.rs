@@ -390,11 +390,12 @@ macro_rules! trait_handler {
                         }).await?;
                         Ok(())
                     }
-                    8110 => {
+                    8110 | 8115 => {
+                        // GetSwitchHandData (4.6.51: CsReq 8115 → ScRsp 8104, retcode tag 3)
                         session.send_raw(NetPacket {
-                            cmd_type: 8116,
+                            cmd_type: 8104,
                             head: Vec::new(),
-                            body: vec![0x38, 0x00], // tag 7: retcode = 0 (GetSwitchHandDataScRsp)
+                            body: vec![0x18, 0x00], // tag 3: retcode = 0
                         }).await?;
                         Ok(())
                     }
@@ -428,6 +429,13 @@ trait_handler! {
     SyncClientResVersion;
     GetTutorial;
     GetTutorialGuide;
+    FinishTutorial;
+    FinishTutorialGuide;
+    UnlockTutorial;
+    UnlockTutorialGuide;
+    GetMainMissionCustomValue;
+    UpdateTrackMainMission;
+    GetNpcMessageGroup;
 
     // Entity move (dummy!)
     SceneEntityMove;

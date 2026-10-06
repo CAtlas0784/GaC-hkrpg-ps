@@ -89,3 +89,5 @@ description: คู่มืออัปเดต Honkai Star Rail Private Serve
 - Currency War (ตระกูล Rogue 101 cmd) — ตอบ default ครบแล้ว แต่เล่นได้จริงต้อง implement state เฉพาะไล่ตาม log
 - Starward Mode — มี handler (GetChallengePeakData 8942 / StartChallengePeak 8948 ใช้ peak data จริง) ต้องทดสอบต่อ
 - tutorial ID list เป็นช่วง 1-1000 (estimate) — ถ้ายังมี popup ต้องหา id จริงจาก design data
+- **GetMissionStatusScRsp (1294) ต้องส่ง finished_main_mission_id_list** (รวมจาก res.json ทุกฉาก) — ตอบเปล่า = client Lua (_CheckVerseByMainMission) NRE → บล็อก input หลังเข้าฉาก (เดินไม่ได้) + client ส่ง cmd 1204 ซ้ำ 10+ ครั้ง
+- **FinishTutorial/FinishTutorialGuide/UnlockTutorial ต้องตอบพร้อม Tutorial/TutorialGuide message** (status finished) — drop หรือตอบเปล่า = client ไม่ปลด input หลังปิดสอนเล่น (เดินไม่ได้)

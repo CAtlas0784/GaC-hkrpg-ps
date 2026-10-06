@@ -9,6 +9,8 @@ use common::structs::{AvatarJson, BattleType, BattleBuffJson, Monster};
 
 #[derive(Deserialize, Clone, Debug, Default)]
 pub struct ChallengeStageData {
+    #[serde(default, alias = "groupId")]
+    pub group_id: u32,
     pub entrance: u32,
     pub entrance2: u32,
     pub group1: u32,
@@ -106,41 +108,24 @@ fn get_challenge_groups() -> Vec<u32> {
     if !CHALLENGE_DATA.groups_list.is_empty() {
         return CHALLENGE_DATA.groups_list.clone();
     }
-    let mut groups = Vec::new();
-    for &id in &get_challenge_stages_list() {
-        if id < 100 {
-            groups.push(100);
-        } else if id < 1000 {
-            groups.push(900);
-        } else if id < 20000 {
-            groups.push(id / 100);
-        } else {
-            groups.push(id / 10);
-        }
-    }
-    groups.sort();
+    // ส่งเฉพาะ Abyss Group ID จริงจาก data (กัน 深渊分组数据不存在 จาก group ปลอม)
+    let mut groups: Vec<u32> = CHALLENGE_DATA
+        .challenges
+        .values()
+        .map(|c| c.group_id)
+        .filter(|&g| g != 0)
+        .collect();
+    groups.sort_unstable();
     groups.dedup();
     groups
 }
 
-/// group_id ที่ stage นี้อยู่ (ต้องตรงกับ logic ใน get_challenge_groups)
-fn group_of_stage(id: u32) -> u32 {
-    if id < 100 {
-        100
-    } else if id < 1000 {
-        900
-    } else if id < 20000 {
-        id / 100
-    } else {
-        id / 10
-    }
-}
-
-/// ดาวรวมของกลุ่ม (3 ดาวต่อ stage) — ใส่ใน taken_stars_count_reward เพื่อให้รางวัลดาวถือว่ารับครบ
+/// ดาวรวมของกลุ่ม (3 ดาวต่อ stage) — นับจาก challenges ที่ group_id ตรง
 fn group_total_stars(group_id: u32) -> u64 {
-    get_challenge_stages_list()
-        .into_iter()
-        .filter(|&id| group_of_stage(id) == group_id)
+    CHALLENGE_DATA
+        .challenges
+        .values()
+        .filter(|c| c.group_id == group_id)
         .count() as u64
         * 3
 }
@@ -188,15 +173,6 @@ pub async fn on_get_challenge_cs_req(
         .map(|&group_id| ChallengeGroup {
             group_id,
             taken_stars_count_reward: group_total_stars(group_id),
-        })
-        .collect();
-    // สถานะปลดล็อกของแต่ละกลุ่ม — ถ้าไม่ส่ง กลุ่มใหม่ (tierce 4.6) จะโชว์ไม่ปลดใน UI
-    res.kkiafpfklge = groups
-        .iter()
-        .map(|&group_id| Fmdaaiklaja {
-            group_id,
-            jfkmnbhobcl: true,
-            egllmgllhdl: true,
         })
         .collect();
     res.challenge_list = get_challenge_list();
@@ -312,7 +288,11 @@ pub async fn on_get_cur_challenge_peak_cs_req(
     _req: &GetCurChallengePeakCsReq,
     res: &mut GetCurChallengePeakScRsp,
 ) {
+    // ย้อนกลับ state 2,902,528 (build ที่เข้า Pom-Pom ได้)
     res.retcode = 0;
+    res.has_passed = true;
+    res.peak_id = 1;
+    res.boss_buff_id = 0;
 }
 
 /// Starward Mode — เริ่มแชลเลนจ์ peak (cmd 8948)
