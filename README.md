@@ -1,4 +1,4 @@
-# GaC hkrpg ps
+# GaC hkrpg rust
 
 A native, high-performance Rust private server implementation for Honkai: Star Rail (Supported Versions: **4.4.5x - 4.5.52+**).
 
