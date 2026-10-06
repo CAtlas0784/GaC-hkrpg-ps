@@ -22,3 +22,11 @@ test_*.json
 test_*.txt
 gameserver/src/net/full_dummy.rs
 tools/AI TOOLBOX/memory/2026-10-04.md
+
+# Tools scripts & PS dump folders
+tools/py_scripts/
+tools/firefly_dump/
+tools/march7_dump/
+tools/*_dump/
+*_dump/
+*.zip
