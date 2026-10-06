@@ -418,7 +418,11 @@ trait_handler! {
     PlayerGetToken;
     PlayerLogin;
     GetMissionStatus;
+    GetMissionData;
+    GetQuestData;
     GetBasicInfo;
+    GetPlayerBoardData;
+    GetPhoneData;
     GetAvatarData;
     GetAllLineupData;
     GetCurLineupData;
@@ -483,6 +487,7 @@ trait_handler! {
     EnterScene;
     InteractProp;
     GetNpcTakenReward;
+    GetUnlockTeleport;
 
     // Optional
     GetMail;

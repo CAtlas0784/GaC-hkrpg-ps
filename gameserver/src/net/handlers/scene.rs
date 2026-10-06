@@ -873,7 +873,7 @@ pub async fn load_challenge_scene(
                     avatar_type: AvatarType::AvatarFormalType.into(),
                     base_avatar_id: aid,
                     map_layer: 0,
-                    uid: 25,
+                    uid: 1337,
                 })),
                 ..Default::default()
             })
@@ -885,4 +885,30 @@ pub async fn load_challenge_scene(
     // Note: Do NOT overwrite json.scene in persistent so player returns to open world on logout/finish!
 
     Ok((scene_info, player_motion))
+}
+
+// cmd 1432 → 1421: GetUnlockTeleportScRsp (ปลดล็อคเสาวาปทั้งเกม)
+pub async fn on_get_unlock_teleport_cs_req(
+    _session: &mut PlayerSession,
+    body: &GetUnlockTeleportCsReq,
+    res: &mut GetUnlockTeleportScRsp,
+) {
+    res.retcode = 0;
+    let unlocks = mission::get_mission_unlocks();
+    let mut tps = unlocks.teleport_ids.clone();
+    if tps.is_empty() {
+        tps = common::resources::TELEPORT_DB
+            .values()
+            .flat_map(|m| m.keys().copied())
+            .collect();
+    }
+    tps.sort_unstable();
+    tps.dedup();
+    res.unlocked_teleport_list = tps;
+
+    scene_debug_log(&format!(
+        "GET_UNLOCK_TELEPORT req_entries={} teleports_sent={}",
+        body.entry_id_list.len(),
+        res.unlocked_teleport_list.len()
+    ));
 }

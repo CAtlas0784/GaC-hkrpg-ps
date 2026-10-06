@@ -73,7 +73,7 @@ dummy! {
     // GetRogueScoreRewardInfo, // ?3.7.51
     // GetGachaInfo,
     QueryProductInfo,
-    GetQuestData,
+    // GetQuestData,
     GetQuestRecord,
     // GetFriendListInfo,
     // GetFriendApplyListInfo,
@@ -87,9 +87,9 @@ dummy! {
     // GetTreasureDungeonActivityData, // ?3.7.51
     // PlayerReturnInfoQuery, // ?3.7.51
     // GetBag,
-    GetPlayerBoardData,
+    // GetPlayerBoardData,
     // GetActivityScheduleConfig,
-    GetMissionData,
+    // GetMissionData,
     // GetChallenge,
     // GetCurChallenge,
     // GetRogueInfo, // ?3.7.51
@@ -108,7 +108,7 @@ dummy! {
     // GetChatFriendHistory,
     GetSecretKeyInfo,
     GetVideoVersionKey,
-    GetPhoneData,
+    // GetPhoneData,
     // PlayerLoginFinish,
     FinishTalkMission,
     GetRechargeGiftInfo,
