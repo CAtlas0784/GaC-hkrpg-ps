@@ -2,6 +2,7 @@
 
 A native, high-performance Rust private server implementation for Honkai: Star Rail (Supported Versions: **######**).
 
+- A LOT BUG IM TOO LAZY TO FIX TS (move to [new shit](https://github.com/CAtlas0784/GaC-hkrpg-GO))
 ---
 
 ## 🌟 About This Project / Contribution Notice
