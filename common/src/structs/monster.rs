@@ -24,8 +24,8 @@ impl_from!(Monster, SceneMonster, |value| {
 impl Monster {
     pub fn to_scene_monster_wave(wave_id: u32, monsters: &[Self]) -> SceneMonsterWave {
         SceneMonsterWave {
-            battle_wave_id: wave_id,
-            monster_param: Some(SceneMonsterWaveParam {
+            wave_id,
+            wave_param: Some(SceneMonsterWaveParam {
                 level: monsters.iter().map(|v| v.level).max().unwrap_or(95),
                 ..Default::default()
             }),

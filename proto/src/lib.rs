@@ -11,3 +11,10 @@ pub trait CmdID {
         Self::CMD_ID
     }
 }
+
+pub type QuickStartCocoonStageCsReq = StartQuickCocoonStageCsReq;
+pub type QuickStartCocoonStageScRsp = StartQuickCocoonStageRsp;
+pub type SendMsgCsReq = PlanetfesSendMsgCsReq;
+pub type BigDataAvatarRelicRecommend = Gdfkjkdlepm;
+pub type GroupRefreshInfo = SceneGroupRefreshInfo;
+pub type GateServer = Gateserver;

@@ -10,6 +10,7 @@ mod mail;
 mod mission;
 mod player;
 mod scene;
+mod tutorial;
 
 use anyhow::Result;
 use paste::paste;
@@ -30,6 +31,7 @@ pub use mail::*;
 pub use mission::*;
 pub use player::*;
 pub use scene::*;
+pub use tutorial::*;
 
 macro_rules! dummy {
     ($($cmd:ident),* $(,)*) => {
@@ -73,7 +75,7 @@ dummy! {
     // GetRogueScoreRewardInfo, // ?3.7.51
     // GetGachaInfo,
     QueryProductInfo,
-    GetQuestData,
+    // GetQuestData,
     GetQuestRecord,
     // GetFriendListInfo,
     // GetFriendApplyListInfo,
@@ -87,15 +89,15 @@ dummy! {
     // GetTreasureDungeonActivityData, // ?3.7.51
     // PlayerReturnInfoQuery, // ?3.7.51
     // GetBag,
-    GetPlayerBoardData,
+    // GetPlayerBoardData,
     // GetActivityScheduleConfig,
-    GetMissionData,
+    // GetMissionData,
     // GetChallenge,
     // GetCurChallenge,
     // GetRogueInfo, // ?3.7.51
     GetExpeditionData,
     // GetRogueDialogueEventData,
-    GetJukeboxData,
+    // GetJukeboxData,
     // DailyFirstMeetPam, // ?3.7.51
     // GetMuseumInfo, // ?3.7.51
     GetLoginActivity,
@@ -108,7 +110,7 @@ dummy! {
     // GetChatFriendHistory,
     GetSecretKeyInfo,
     GetVideoVersionKey,
-    GetPhoneData,
+    // GetPhoneData,
     // PlayerLoginFinish,
     FinishTalkMission,
     GetRechargeGiftInfo,

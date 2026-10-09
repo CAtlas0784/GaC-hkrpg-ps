@@ -117,25 +117,34 @@ macro_rules! trait_handler {
 
             async fn on_message(session: &mut PlayerSession, cmd_id: u16, payload: Vec<u8>) -> Result<()> {
                 use ::prost::Message;
+                crate::util::packet_log(&format!("[PACKET RECV] cmd_id: {cmd_id} (len: {})", payload.len()));
                 tracing::info!("[PACKET] Received cmd_id: {cmd_id}");
                 if PlayerSession::should_send_dummy_rsp(cmd_id) {
                     session.send_dummy_response(cmd_id).await?;
                     return Ok(());
                 }
 
-
                 match cmd_id {
                     $(
                         cmd_id if cmd_id == paste! { <proto::[<$name CsReq>] as proto::CmdID>::CMD_ID } => {
-                            let body = paste! { proto::[<$name CsReq>]::decode(&mut &payload[..])? };
-                            paste! {
-                                Self::[<on_$name:snake _cs_req>](session, &body)
-                                    .instrument(tracing::info_span!(stringify!([<on_$name:snake>]), cmd_id = cmd_id))
-                                    .await
+                            match paste! { proto::[<$name CsReq>]::decode(&mut &payload[..]) } {
+                                Ok(body) => {
+                                    paste! {
+                                        Self::[<on_$name:snake _cs_req>](session, &body)
+                                            .instrument(tracing::info_span!(stringify!([<on_$name:snake>]), cmd_id = cmd_id))
+                                            .await
+                                    }
+                                }
+                                Err(e) => {
+                                    let req_name = stringify!($name);
+                                    crate::util::packet_log(&format!("[ERROR] Failed to decode cmd_id {cmd_id} ({req_name}): {e}"));
+                                    tracing::error!("Failed to decode cmd_id {cmd_id} ({req_name}): {e}");
+                                    Ok(())
+                                }
                             }
                         }
                     )*
-                    1711 => {
+                    1775 | 1711 => {
                         let mut buf = &payload[..];
                         let mut group_id = 100u32;
                         while !buf.is_empty() {
@@ -226,22 +235,24 @@ macro_rules! trait_handler {
                             body.extend_from_slice(&cbs);
                         }
 
+                        // 4.6.51: 1708 (GetChallengeGroupStatisticsScRsp)
                         session.send_raw(NetPacket {
-                            cmd_type: 1736,
+                            cmd_type: 1708,
                             head: Vec::new(),
                             body,
                         }).await?;
                         Ok(())
                     }
-                    8979 | 8981 => {
+                    8995 | 8979 | 8981 => {
                         let body = challenge::build_get_challenge_tierce_data_sc_rsp();
+                        // 4.6.51: 8996, legacy: 8994
                         session.send_raw(NetPacket {
-                            cmd_type: 8994, // 4.5.52 GetChallengeTierceDataScRsp
+                            cmd_type: 8996,
                             head: Vec::new(),
                             body: body.clone(),
                         }).await?;
                         let _ = session.send_raw(NetPacket {
-                            cmd_type: 8980, // legacy fallback
+                            cmd_type: 8994,
                             head: Vec::new(),
                             body,
                         }).await;
@@ -327,25 +338,25 @@ macro_rules! trait_handler {
                         session.send_raw(NetPacket { cmd_type: 1748, head: Vec::new(), body: Vec::new() }).await?;
                         Ok(())
                     }
-                    1705 | 1793 => {
+                    1731 | 1793 => {
                         challenge::handle_start_challenge(session, &payload).await
                     }
-                    8983 | 8988 => {
+                    8986 | 8983 | 8988 => {
                         challenge::handle_start_challenge_tierce(session, &payload).await
                     }
                     8978 => {
                         challenge::handle_set_challenge_tierce_lineup(session, &payload).await
                     }
-                    1760 | 1788 => {
+                    1705 | 1760 | 1788 => {
                         challenge::handle_leave_challenge(session).await
                     }
-                    8998 => {
+                    8989 | 8998 => {
                         challenge::handle_leave_challenge_tierce(session).await
                     }
-                    8991 => {
-                        // 4.5.52 GetChallengeTierceControllerCsReq -> GetChallengeTierceControllerScRsp (CmdID 8982: tag 14 retcode = 0)
+                    8993 | 8991 => {
+                        // 4.6.51: 8981 (tag 14 retcode = 0)
                         session.send_raw(NetPacket {
-                            cmd_type: 8982,
+                            cmd_type: 8981,
                             head: Vec::new(),
                             body: vec![0x70, 0x00],
                         }).await?;
@@ -364,7 +375,11 @@ macro_rules! trait_handler {
                         challenge::handle_take_challenge_reward(session, &payload).await
                     }
                     188 => {
-                        Self::on_get_cur_battle_info_cs_req(session, &proto::GetCurBattleInfoCsReq::default()).await?;
+                        session.send_raw(NetPacket {
+                            cmd_type: 181,
+                            head: Vec::new(),
+                            body: vec![0x50, 0x00],
+                        }).await?;
                         Ok(())
                     }
                     4130 => {
@@ -375,15 +390,19 @@ macro_rules! trait_handler {
                         }).await?;
                         Ok(())
                     }
-                    8110 => {
+                    8110 | 8115 => {
+                        // GetSwitchHandData (4.6.51: CsReq 8115 → ScRsp 8104, retcode tag 3)
                         session.send_raw(NetPacket {
-                            cmd_type: 8116,
+                            cmd_type: 8104,
                             head: Vec::new(),
-                            body: vec![0x38, 0x00], // tag 7: retcode = 0 (GetSwitchHandDataScRsp)
+                            body: vec![0x18, 0x00], // tag 3: retcode = 0
                         }).await?;
                         Ok(())
                     }
                     _ => {
+                        // หมายเหตุ: ห้ามตอบ ScRsp ว่างให้ cmd ที่ไม่รู้จัก —
+                        // client modules (GridFight/ChessRogue/EvolveBuild/ChimeraDuel/Jukebox)
+                        // จะ Sync(nil) แล้ว NRE จน game state machine ไม่ไปต่อ (จอดำ)
                         if cmd_id != 7159 {
                             tracing::warn!("Unknown command ID: {cmd_id}");
                         }
@@ -399,7 +418,11 @@ trait_handler! {
     PlayerGetToken;
     PlayerLogin;
     GetMissionStatus;
+    GetMissionData;
+    GetQuestData;
     GetBasicInfo;
+    GetPlayerBoardData;
+    GetPhoneData;
     GetAvatarData;
     GetAllLineupData;
     GetCurLineupData;
@@ -408,6 +431,15 @@ trait_handler! {
     SetAvatarEnhancedId;
     TakePromotionReward;
     SyncClientResVersion;
+    GetTutorial;
+    GetTutorialGuide;
+    FinishTutorial;
+    FinishTutorialGuide;
+    UnlockTutorial;
+    UnlockTutorialGuide;
+    GetMainMissionCustomValue;
+    UpdateTrackMainMission;
+    GetNpcMessageGroup;
 
     // Entity move (dummy!)
     SceneEntityMove;
@@ -432,6 +464,14 @@ trait_handler! {
     ChangeLineupLeader;
     ReplaceLineup;
     QuitLineup;
+    SwapLineup;
+    SwitchLineupIndex;
+    GetLineupAvatarData;
+
+    // Avatar skin / outfit
+    DressAvatarSkin;
+    TakeOffAvatarSkin;
+    SetPlayerOutfit;
 
     // Battle
     StartCocoonStage;
@@ -446,6 +486,8 @@ trait_handler! {
     GetSceneMapInfo;
     EnterScene;
     InteractProp;
+    GetNpcTakenReward;
+    GetUnlockTeleport;
 
     // Optional
     GetMail;
@@ -459,4 +501,7 @@ trait_handler! {
     GetChallenge;
     GetCurChallenge;
     GetActivityScheduleConfig;
+    GetChallengePeakData;
+    GetCurChallengePeak;
+    StartChallengePeak;
 }

@@ -35,6 +35,8 @@ pub struct FreesrData {
     pub enable_sw_global: Option<bool>,
     #[serde(skip_serializing, skip_deserializing)]
     pub enable_castorice_global: Option<bool>,
+    #[serde(skip_serializing, skip_deserializing)]
+    pub dressed_skins: HashMap<u32, u32>,
 }
 
 impl FreesrData {
@@ -54,6 +56,7 @@ impl FreesrData {
                     .iter()
                     .filter(|relic| relic.equip_avatar == avatar_id)
                     .collect(),
+                self.dressed_skins.get(&avatar_id).copied().unwrap_or(0),
             ),
         )
     }
@@ -83,6 +86,7 @@ impl FreesrData {
         freesr_data.march_type = persistent.march_type;
         freesr_data.enable_sw_global = persistent.enable_sw_global;
         freesr_data.enable_castorice_global = persistent.enable_castorice_global;
+        freesr_data.dressed_skins = persistent.dressed_skins;
         // freesr_data.game_language = persistent.game_language;
         // freesr_data.voice_langauge = persistent.voice_language;
 
@@ -149,6 +153,7 @@ impl FreesrData {
             march_type: self.march_type,
             enable_sw_global: self.enable_sw_global,
             enable_castorice_global: self.enable_castorice_global,
+            dressed_skins: self.dressed_skins.clone(),
             // game_language: self.game_language,
             // voice_language: self.voice_langauge,
         }) {

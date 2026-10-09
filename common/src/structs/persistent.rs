@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
 
@@ -47,6 +47,9 @@ pub struct Persistent {
     pub enable_sw_global: Option<bool>,
     #[serde(default = "default_true")]
     pub enable_castorice_global: Option<bool>,
+    // avatar_id -> dressed skin_id
+    #[serde(default)]
+    pub dressed_skins: HashMap<u32, u32>,
 }
 
 fn default_true() -> Option<bool> {
@@ -65,6 +68,7 @@ impl Default for Persistent {
             // voice_language: AllowedLanguages::Jp,
             enable_sw_global: Some(true),
             enable_castorice_global: Some(true),
+            dressed_skins: HashMap::new(),
         }
     }
 }
